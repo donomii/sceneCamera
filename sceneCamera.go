@@ -30,6 +30,11 @@ func (s *SceneCamera) LookAt(x, y, z float32) {
 	s.Camera = mgl32.LookAt(vec[0], vec[1], vec[2], x, y, z, 0.0, 1.0, 0.0)
 }
 
+func (s *SceneCamera) Position(x, y, z float32) (float32, float32, float32) {
+	vec := s.RotationMatrix.Mul4x1(mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
+	return vec.X(), vec.Y(), vec.Z()
+}
+
 func (s *SceneCamera) FlipCam() {
 	//sMat := mgl32.Scale3D(1.0,-1.0,1.0)
 	//s.Camera = compose(sMat, s.Camera)
