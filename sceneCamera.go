@@ -3,7 +3,9 @@ package sceneCamera
 import "github.com/go-gl/mathgl/mgl32"
 import "golang.org/x/mobile/exp/sensor"
 
-//import "fmt"
+//import "log"
+
+import "fmt"
 
 type SceneCamera struct {
 	Camera         mgl32.Mat4
@@ -24,14 +26,22 @@ func myinit() *SceneCamera {
 	return &s
 }
 
+func (s *SceneCamera) Dump() {
+	fmt.Println("Camera matrix:", s.Camera)
+	x, y, z := s.Position()
+	fmt.Println("Position - X: ", x, "Y:", y, "Z:", z)
+	fmt.Println("Col 4 ", s.Camera.Col(3))
+}
 func (s *SceneCamera) LookAt(x, y, z float32) {
-	vec := s.RotationMatrix.Mul4x1(mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
+	//vec := s.RotationMatrix.Mul4x1(mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
+	xx, yy, zz := s.Position()
 	//fmt.Printf("Eye vector: %v\n", vec)
-	s.Camera = mgl32.LookAt(vec[0], vec[1], vec[2], x, y, z, 0.0, 1.0, 0.0)
+	s.Camera = mgl32.LookAt(xx, yy, zz, x, y, z, 0.0, 1.0, 0.0)
 }
 
-func (s *SceneCamera) Position(x, y, z float32) (float32, float32, float32) {
-	vec := s.RotationMatrix.Mul4x1(mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
+func (s *SceneCamera) Position() (float32, float32, float32) {
+	//vec := s.Camera.Mul4x1(mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
+	vec := s.Camera.Mul4x1(mgl32.Vec4{0.0, 0.0, 0.0, 1.0})
 	return vec.X(), vec.Y(), vec.Z()
 }
 
@@ -59,7 +69,13 @@ func (s *SceneCamera) SetViewMatrix(newMatrix mgl32.Mat4) {
 
 //Moves the camera
 func (s *SceneCamera) Translate(x, y, z float32) {
+	fmt.Println("Dump prior to translate: ")
+	s.Dump()
 	s.Camera = compose(s.Camera, mgl32.Translate3D(x, y, z))
+	fmt.Println("Translate matrix: ", mgl32.Translate3D(x, y, z))
+	fmt.Println("Dump post translate: ")
+	s.Dump()
+	fmt.Println("Done")
 }
 
 //Rotate around the Y axis
