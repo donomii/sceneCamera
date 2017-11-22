@@ -35,4 +35,6 @@ sc := sceneCamera.New()
         
 
 
-The camera starts at position 0,0,0.5, looking at 0,0,0 (the origin). I.e. it is staring directly down the Z axis, in the negative direction
+The camera starts at position 0,0,0.5, looking at 0,0,0 (the origin). I.e. it is staring directly down the Z axis, in the negative direction. 
+
+Positive Y should always be up, towards the top of  monitor
