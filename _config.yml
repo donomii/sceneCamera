@@ -1,4 +1,4 @@
 theme: jekyll-theme-tactile
-title: Scene Camera
-description: A 3D camera library
+title: "Scene Camera" 
+description: "A 3D camera library for Go"
 show_downloads: true
