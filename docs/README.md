@@ -23,18 +23,18 @@ For a golang mobile app
         glctx.UniformMatrix4fv(uniform_view, view[0:16])
         
 For any other application:
-sc := sceneCamera.New()
 
-        sc.ProcessEvent(e)
+        sc := sceneCamera.New()
+        sc.Translate(1.0, 2.0, 3.0)
         view := sc.ViewMatrix()
         glctx.UniformMatrix4fv(uniform_view, view[0:16])
 
-
-
-
-        
-
+# Notes
 
 The camera starts at position 0,0,0.5, looking at 0,0,0 (the origin). I.e. it is staring directly down the Z axis, in the negative direction. 
 
-Positive Y should always be up, towards the top of  monitor
+Positive Y should always be up, towards the top of  monitor, and positive X should be to the right.
+
+# Bugs
+
+At the moment, the camera rotates around the origin, instead of the origin rotating around the camera.  I'll fix tht soon.
