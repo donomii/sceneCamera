@@ -1,1 +1,4 @@
 theme: jekyll-theme-tactile
+title: Scene Camera
+description: A 3D camera library
+show_downloads: true
