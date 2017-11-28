@@ -86,6 +86,11 @@ func (s *SceneCamera) Translate(x, y, z float32) {
 	fmt.Println("Done")
 }
 
+func (s *SceneCamera) RotateZ(a float32) {
+	s.rotationMatrix = compose(s.rotationMatrix, mgl32.HomogRotate3DZ(a))
+
+	}
+
 //Rotate around the Y axis
 //FIXME translate to the origin, do the rotate, then translate back
 //Maybe we should start storing the MVP matrices separately?
