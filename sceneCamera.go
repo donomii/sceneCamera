@@ -2,6 +2,7 @@ package sceneCamera
 
 import "github.com/go-gl/mathgl/mgl32"
 import "golang.org/x/mobile/exp/sensor"
+import "github.com/barnex/fmath"
 
 //import "log"
 
@@ -11,6 +12,7 @@ type SceneCamera struct {
 	camera         mgl32.Mat4
 	rotationMatrix mgl32.Mat4
 	pos            mgl32.Vec4
+	rot            mgl32.Vec4
 	PrevTime       int64 //Device timestamp.  Does not hold correct time, is only useful for delta time
 	flipCam        bool  //Draw the mirror version of a scene
 }
@@ -42,11 +44,35 @@ func (s *SceneCamera) LookAt(x, y, z float32) {
 }
 
 func (s *SceneCamera) Position() (float32, float32, float32) {
-
 	//vec := s.Camera.Mul4x1(mgl32.Vec4{0.0, 0.0, 0.0, 1.0})
 	//return vec.X(), vec.Y(), vec.Z()
 	return s.pos.X(), s.pos.Y(), s.pos.Z()
 }
+
+func (s *SceneCamera) Rotation() (float32, float32, float32) {
+	//vec := s.Camera.Mul4x1(mgl32.Vec4{0.0, 0.0, 0.0, 1.0})
+	//return vec.X(), vec.Y(), vec.Z()
+	return s.rot.X(), s.rot.Y(), s.rot.Z()
+}
+
+
+/*
+func (s *SceneCamera) Transform() mgl32.Mat4 {
+	//vec := s.Camera.Mul4x1(mgl32.Vec4{0.0, 0.0, 0.0, 1.0})
+	//return vec.X(), vec.Y(), vec.Z()
+	ret := compose(mgl32.Ident4(), positionMatrix)
+	ret = compose(ret, s.rotationMatrix)
+	return ret
+}
+*/
+
+
+
+/*
+func (s *SceneCamera) Euler() mgl32.Mat4 {
+    
+}
+*/
 
 func (s *SceneCamera) SetPosition(x, y, z float32) {
 	s.pos = mgl32.Vec4{0.0, 0.0, 0.0, 1.0}
@@ -91,11 +117,34 @@ func (s *SceneCamera) RotateZ(a float32) {
 
 	}
 
+    func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
+
+    //assert(isRotationMatrix(R));
+
+    sy := fmath.Sqrt(R.At(0,0) * R.At(0,0) +  R.At(1,0) * R.At(1,0) )
+
+
+    var x, y, z float32;
+    if (!(sy<1e-6)) {
+        x = fmath.Atan2(R.At(2,1) , R.At(2,2))
+        y = fmath.Atan2(-R.At(2,0), sy)
+        z = fmath.Atan2(R.At(1,0), R.At(0,0))
+    } else {
+        x = fmath.Atan2(-R.At(1,2), R.At(1,1))
+        y = fmath.Atan2(-R.At(2,0), sy)
+        z = 0
+    }
+    return mgl32.Vec3{x, y, z}
+}
+
 //Rotate around the Y axis
 //FIXME translate to the origin, do the rotate, then translate back
 //Maybe we should start storing the MVP matrices separately?
 func (s *SceneCamera) RotateY(a float32) {
 	s.rotationMatrix = compose(s.rotationMatrix, mgl32.HomogRotate3DY(a))
+    s.rot[1] += a*3.1
+    euler := rotationMatrixToEulerAngles(s.rotationMatrix)
+    fmt.Printf("Angle: %v, euler: %v\n", s.rot[1], euler)
 	/*
 		fmt.Println("-----------------------")
 		fmt.Println("Dump prior to rotate: ")
