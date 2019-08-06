@@ -117,6 +117,16 @@ func (s *SceneCamera) RotateZ(a float32) {
 
 	}
 
+    // Checks if a matrix is a valid rotation matrix.
+func isRotationMatrix(R *mgl32.Mat4) bool {
+    Rt := R.Transpose();
+    shouldBeIdentity = Rt.Mult(R);
+    I = eye(3,3, shouldBeIdentity.type());
+
+    return  norm(I, shouldBeIdentity) < 1e-6;
+
+}
+
     func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
 
     //assert(isRotationMatrix(R));
