@@ -55,7 +55,6 @@ func (s *SceneCamera) Rotation() (float32, float32, float32) {
 	return s.rot.X(), s.rot.Y(), s.rot.Z()
 }
 
-
 /*
 func (s *SceneCamera) Transform() mgl32.Mat4 {
 	//vec := s.Camera.Mul4x1(mgl32.Vec4{0.0, 0.0, 0.0, 1.0})
@@ -66,11 +65,9 @@ func (s *SceneCamera) Transform() mgl32.Mat4 {
 }
 */
 
-
-
 /*
 func (s *SceneCamera) Euler() mgl32.Mat4 {
-    
+
 }
 */
 
@@ -115,36 +112,37 @@ func (s *SceneCamera) Translate(x, y, z float32) {
 func (s *SceneCamera) RotateZ(a float32) {
 	s.rotationMatrix = compose(s.rotationMatrix, mgl32.HomogRotate3DZ(a))
 
-	}
-
-    // Checks if a matrix is a valid rotation matrix.
-func isRotationMatrix(R *mgl32.Mat4) bool {
-    Rt := R.Transpose();
-    shouldBeIdentity = Rt.Mult(R);
-    I = eye(3,3, shouldBeIdentity.type());
-
-    return  norm(I, shouldBeIdentity) < 1e-6;
-
 }
 
-    func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
+/*
+// Checks if a matrix is a valid rotation matrix.
+func isRotationMatrix(R *mgl32.Mat4) bool {
+	Rt := R.Transpose()
+	shouldBeIdentity := Rt.Mul4(*R)
+	I := eye(3, 3, shouldBeIdentity.Type())
 
-    //assert(isRotationMatrix(R));
+	return norm(I, shouldBeIdentity) < 1e-6
 
-    sy := fmath.Sqrt(R.At(0,0) * R.At(0,0) +  R.At(1,0) * R.At(1,0) )
+}
+*/
 
+func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
 
-    var x, y, z float32;
-    if (!(sy<1e-6)) {
-        x = fmath.Atan2(R.At(2,1) , R.At(2,2))
-        y = fmath.Atan2(-R.At(2,0), sy)
-        z = fmath.Atan2(R.At(1,0), R.At(0,0))
-    } else {
-        x = fmath.Atan2(-R.At(1,2), R.At(1,1))
-        y = fmath.Atan2(-R.At(2,0), sy)
-        z = 0
-    }
-    return mgl32.Vec3{x, y, z}
+	//assert(isRotationMatrix(R));
+
+	sy := fmath.Sqrt(R.At(0, 0)*R.At(0, 0) + R.At(1, 0)*R.At(1, 0))
+
+	var x, y, z float32
+	if !(sy < 1e-6) {
+		x = fmath.Atan2(R.At(2, 1), R.At(2, 2))
+		y = fmath.Atan2(-R.At(2, 0), sy)
+		z = fmath.Atan2(R.At(1, 0), R.At(0, 0))
+	} else {
+		x = fmath.Atan2(-R.At(1, 2), R.At(1, 1))
+		y = fmath.Atan2(-R.At(2, 0), sy)
+		z = 0
+	}
+	return mgl32.Vec3{x, y, z}
 }
 
 //Rotate around the Y axis
@@ -152,9 +150,9 @@ func isRotationMatrix(R *mgl32.Mat4) bool {
 //Maybe we should start storing the MVP matrices separately?
 func (s *SceneCamera) RotateY(a float32) {
 	s.rotationMatrix = compose(s.rotationMatrix, mgl32.HomogRotate3DY(a))
-    s.rot[1] += a*3.1
-    euler := rotationMatrixToEulerAngles(s.rotationMatrix)
-    fmt.Printf("Angle: %v, euler: %v\n", s.rot[1], euler)
+	s.rot[1] += a * 3.1
+	euler := rotationMatrixToEulerAngles(s.rotationMatrix)
+	fmt.Printf("Angle: %v, euler: %v\n", s.rot[1], euler)
 	/*
 		fmt.Println("-----------------------")
 		fmt.Println("Dump prior to rotate: ")
