@@ -1,12 +1,23 @@
 package sceneCamera
 
-import "github.com/go-gl/mathgl/mgl32"
-import "golang.org/x/mobile/exp/sensor"
-import "github.com/barnex/fmath"
+import (
+	"fmt"
+	"math"
+
+	"github.com/go-gl/mathgl/mgl32"
+)
+
+//import "golang.org/x/mobile/exp/sensor"
 
 //import "log"
 
-import "fmt"
+func Sqrt(x float32) float32 {
+	return float32(math.Sqrt(float64(x)))
+}
+
+func Atan2(x, y float32) float32 {
+	return float32(math.Atan2(float64(x), float64(y)))
+}
 
 type SceneCamera struct {
 	camera         mgl32.Mat4
@@ -130,16 +141,16 @@ func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
 
 	//assert(isRotationMatrix(R));
 
-	sy := fmath.Sqrt(R.At(0, 0)*R.At(0, 0) + R.At(1, 0)*R.At(1, 0))
+	sy := Sqrt(R.At(0, 0)*R.At(0, 0) + R.At(1, 0)*R.At(1, 0))
 
 	var x, y, z float32
 	if !(sy < 1e-6) {
-		x = fmath.Atan2(R.At(2, 1), R.At(2, 2))
-		y = fmath.Atan2(-R.At(2, 0), sy)
-		z = fmath.Atan2(R.At(1, 0), R.At(0, 0))
+		x = Atan2(R.At(2, 1), R.At(2, 2))
+		y = Atan2(-R.At(2, 0), sy)
+		z = Atan2(R.At(1, 0), R.At(0, 0))
 	} else {
-		x = fmath.Atan2(-R.At(1, 2), R.At(1, 1))
-		y = fmath.Atan2(-R.At(2, 0), sy)
+		x = Atan2(-R.At(1, 2), R.At(1, 1))
+		y = Atan2(-R.At(2, 0), sy)
 		z = 0
 	}
 	return mgl32.Vec3{x, y, z}
@@ -205,6 +216,7 @@ func compose(a, b mgl32.Mat4) mgl32.Mat4 {
 	return a.Mul4(b)
 }
 
+/*
 //Expects events from the gomobile "app" module.  ProcessEvent will attempt to extract the movement events and process them.
 func (s *SceneCamera) ProcessEvent(e sensor.Event) {
 	delta := e.Timestamp - s.PrevTime
@@ -216,3 +228,4 @@ func (s *SceneCamera) ProcessEvent(e sensor.Event) {
 	rotMatrix := mgl32.HomogRotate3D(sora.Len(), s_norm)
 	s.camera = compose(rotMatrix, s.camera)
 }
+*/
