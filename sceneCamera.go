@@ -156,6 +156,13 @@ func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
 	return mgl32.Vec3{x, y, z}
 }
 
+func (s *SceneCamera) RotateX(a float32) {
+	s.rotationMatrix = compose(s.rotationMatrix, mgl32.HomogRotate3DX(a))
+	s.rot[1] += a * 3.1
+	euler := rotationMatrixToEulerAngles(s.rotationMatrix)
+	fmt.Printf("Angle: %v, euler: %v\n", s.rot[1], euler)
+}
+
 //Rotate around the Y axis
 //FIXME translate to the origin, do the rotate, then translate back
 //Maybe we should start storing the MVP matrices separately?
