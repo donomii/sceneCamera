@@ -83,7 +83,7 @@ func (s *SceneCamera) Euler() mgl32.Mat4 {
 */
 
 func (s *SceneCamera) SetPosition(x, y, z float32) {
-	s.pos = mgl32.Vec4{0.0, 0.0, 0.0, 1.0}
+	s.pos = mgl32.Vec4{x, y, z, 1.0}
 }
 
 func (s *SceneCamera) FlipCam() {
