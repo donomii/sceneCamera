@@ -82,7 +82,15 @@ func (s *StatueCamera) ViewMatrix() mgl32.Mat4 {
 
 // Translate moves the camera by x, y, and z units in the world space.
 func (s *StatueCamera) Translate(x, y, z float32) {
-	//Transform s.radius and s.rotation into cartesian coordinates, add x,y,z, then convert back to polar coordinates
+	//Transform s.radius and s.rotation into cartesian coordinates
+	v := mgl32.SphericalToCartesian(s.radius, s.rotation[0], s.rotation[1])
+	//Add x,y,z
+	v = v.Add(mgl32.Vec3{x, y, z})
+	//Convert back to polar coordinates
+	r, ele, azi := mgl32.CartesianToSpherical(v)
+	s.radius = r
+	s.rotation[0] = ele
+	s.rotation[1] = azi
 }
 
 // RotateZ rotates the camera by `a` radians around the Z axis.
