@@ -1,122 +1,203 @@
 package Cameras
 
-//This is a camera library for 3D graphics. 
-//It implements a "statue viewer" camera.  This camera looks at a point in space, and can be rotated around that point.  It can also be moved around in space, but the camera always looks at the same point.
+//This is a camera library for 3D graphics. package cameralib
 
-//Calling the rotate functions will rotate the camera around the point it is looking at.  Calling the translate functions will move the camera around in space, but it will always look at the same point.
 import (
 	"fmt"
-	"math"
-
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-
-type StatueCamera struct {
+type Camera struct {
+	position   mgl32.Vec3
+	target     mgl32.Vec3
+	up         mgl32.Vec3
+	orientation   mgl32.Quat
+	mode       int
+	orbitSpeed float32
 }
 
-//New Creates a new camera and returns it.  The camera is positioned at 0.5 on the Y axis, and is looking directly down the axis in the -Y direction (i.e. it is looking at 0,0,0).
-func New() *StatueCamera {
-	
+func New(mode int) *Camera {
+	return &Camera{
+		position:   mgl32.Vec3{0.0, 1.0, 0.0},
+		target:     mgl32.Vec3{0.0, 0.0, 0.0},
+		up:         mgl32.Vec3{0.0, 0.0, 1.0},
+		orientation:   mgl32.QuatIdent(),
+		mode:       mode,
+		orbitSpeed: 0.005,
+	}
 }
 
-//Create a new camera with sensible defaults
-func myinit() *StatueCamera {
+func (c *Camera) Dump() {
+	fmt.Println("Camera position:", c.position)
+	fmt.Println("Camera target:", c.target)
+	fmt.Println("Camera rotation:", c.orientation)
+	fmt.Println("Camera mode:", c.mode)
 }
 
-//Dump prints the camera matrix, rotations and other details to stdout
-func (s *StatueCamera) Dump() {
-
+func (c *Camera) LookAt(x, y, z float32) {
+	c.target = mgl32.Vec3{x, y, z}
 }
 
-//LookAt sets the camera to look at the specified point in world coordinates
-func (s *StatueCamera) LookAt(x, y, z float32) {
-
-}
-
-//Return the position of the camera in world coordinates
-func (s *StatueCamera) Position() (float32, float32, float32) {
-
-}
-
-//Return the Euler rotation angles in radians
-func (s *StatueCamera) Rotation() (float32, float32, float32) {
-
-}
-
-
-
-//Return a matrix that will rotate the camera to the specified Euler angles in radians
-func (s *StatueCamera) EulerMatrix() mgl32.Mat4 {
-
-}
-
-
-func (s *StatueCamera) SetPosition(x, y, z float32) {
-	
-}
-
-
-//ViewMatrix returns the camera matrix, aka the "view" matrix, which forms the V part of the MVP matrix for 3D graphics.
-func (s *StatueCamera) ViewMatrix() mgl32.Mat4 {
-
-}
-
-func (s *StatueCamera) Reset() {
-	
-}
-
-//Sets the internal view matrix, replacing it with your own mgl32.Mat4
-func (s *StatueCamera) SetViewMatrix(newMatrix mgl32.Mat4) {
-	
-}
-
-//Moves the camera
-func (s *StatueCamera) Translate(x, y, z float32) {
-}
-
-func (s *StatueCamera) RotateZ(a float32) {
-
-
+func (c *Camera) Position() (float32, float32, float32) {
+	return c.position.X(), c.position.Y(), c.position.Z()
 }
 
 /*
-// Checks if a matrix is a valid rotation matrix.
-func isRotationMatrix(R *mgl32.Mat4) bool {
-	Rt := R.Transpose()
-	shouldBeIdentity := Rt.Mul4(*R)
-	I := eye(3, 3, shouldBeIdentity.Type())
-
-	return norm(I, shouldBeIdentity) < 1e-6
-
+func (c *Camera) Rotation() (float32, float32, float32) {
+	return c.orientation.EulerAngles()
 }
 */
 
-func rotationMatrixToEulerAngles(R mgl32.Mat4) mgl32.Vec3 {
+func (c *Camera) EulerMatrix() mgl32.Mat4 {
+	return c.orientation.Mat4()
+}
 
-	//assert(isRotationMatrix(R));
+func (c *Camera) SetPosition(x, y, z float32) {
+	c.position = mgl32.Vec3{x, y, z}
+}
 
-	sy := Sqrt(R.At(0, 0)*R.At(0, 0) + R.At(1, 0)*R.At(1, 0))
+func (c *Camera) ViewMatrix() mgl32.Mat4 {
+	return mgl32.LookAtV(c.position, c.target, c.up)
+}
 
-	var x, y, z float32
-	if !(sy < 1e-6) {
-		x = Atan2(R.At(2, 1), R.At(2, 2))
-		y = Atan2(-R.At(2, 0), sy)
-		z = Atan2(R.At(1, 0), R.At(0, 0))
-	} else {
-		x = Atan2(-R.At(1, 2), R.At(1, 1))
-		y = Atan2(-R.At(2, 0), sy)
-		z = 0
+func (c *Camera) Reset() {
+	c.position = mgl32.Vec3{0.0, 1.0, 0.0}
+	c.target = mgl32.Vec3{0.0, 0.0, 0.0}
+	c.orientation = mgl32.QuatIdent()
+}
+
+func (c *Camera) Move(direction int, amount float32) {
+	switch c.mode {
+	case 1:
+		c.moveMuseumMode(direction, amount)
+	case 2:
+		c.moveFPSMode(direction, amount)
+	case 3:
+		c.moveRTSMode(direction, amount)
 	}
-	return mgl32.Vec3{x, y, z}
 }
 
-func (s *StatueCamera) RotateX(a float32) {
-
+func (c *Camera) Translate(x, y, z float32) {
+	c.position = c.position.Add(mgl32.Vec3{x, y, z})
 }
 
-//Rotate around the Y axis
-func (s *StatueCamera) RotateY(a float32) {
+func (c *Camera) Rotate(x, y, z float32) {
+	quatX := mgl32.QuatRotate(x, mgl32.Vec3{1, 0, 0})
+	quatY := mgl32.QuatRotate(y, mgl32.Vec3{0, 1, 0})
+	quatZ := mgl32.QuatRotate(z, mgl32.Vec3{0, 0, 1})
+	c.orientation = c.orientation.Mul(quatX).Mul(quatY).Mul(quatZ)
+}
+/*
+func (c *Camera) EulerAngles() (float32, float32, float32) {
+	return c.Rotation()
+}
+*/
 
+
+func (c *Camera) moveMuseumMode(direction int, amount float32) {
+// Assuming c.orientation is a quaternion representing the camera's orientation
+forward := c.target.Sub(c.position).Normalize()
+
+
+
+    switch direction {
+    case 0: // Zoom in
+        c.position = c.position.Add(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 1: // Zoom out
+        c.position = c.position.Sub(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 2: // Orbit left
+        c.Rotate(0, -c.orbitSpeed*amount, 0)
+    case 3: // Orbit right
+        c.Rotate(0, c.orbitSpeed*amount, 0)
+    case 4: // Orbit up
+        c.Rotate(-c.orbitSpeed*amount, 0, 0)
+    case 5: // Orbit down
+        c.Rotate(c.orbitSpeed*amount, 0, 0)
+    case 6: // Pitch up (Not applicable in museum mode)
+    case 7: // Pitch down (Not applicable in museum mode)
+    case 8: // Yaw left (Not applicable in museum mode)
+    case 9: // Yaw right (Not applicable in museum mode)
+    case 10: // Roll left (Not applicable in museum mode)
+    case 11: // Roll right (Not applicable in museum mode)
+    }
 }
 
+
+func (c *Camera) moveFPSMode(direction int, amount float32) {
+    forward := c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize() // Rotate the negative z-axis using the camera's orientation
+	right := c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize() // Rotate the x-axis using the camera's orientation
+up := c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()    // Rotate the y-axis using the camera's orientation
+
+
+    switch direction {
+    case 0: // Move forward
+        c.position = c.position.Add(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 1: // Move backward
+        c.position = c.position.Sub(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 2: // Strafe left
+        c.position = c.position.Sub(right.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 3: // Strafe right
+        c.position = c.position.Add(right.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 4: // Move up
+        c.position = c.position.Add(up.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 5: // Move down
+        c.position = c.position.Sub(up.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 6: // Pitch up
+        c.Rotate(-c.orbitSpeed*amount, 0, 0)
+    case 7: // Pitch down
+        c.Rotate(c.orbitSpeed*amount, 0, 0)
+    case 8: // Yaw left
+        c.Rotate(0, -c.orbitSpeed*amount, 0)
+    case 9: // Yaw right
+        c.Rotate(0, c.orbitSpeed*amount, 0)
+    case 10: // Roll left
+        c.Rotate(0, 0, -c.orbitSpeed*amount)
+    case 11: // Roll right
+        c.Rotate(0, 0, c.orbitSpeed*amount)
+    }
+}
+
+func (c *Camera) moveRTSMode(direction int, amount float32) {
+    forward := c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize() // Rotate the negative z-axis using the camera's orientation
+	right := c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize() // Rotate the x-axis using the camera's orientation
+up := c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()    // Rotate the y-axis using the camera's orientation
+
+    switch direction {
+    case 0: // Pan forward
+        c.position = c.position.Add(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 1: // Pan backward
+        c.position = c.position.Sub(forward.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 2: // Pan left
+        c.position = c.position.Sub(right.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 3: // Pan right
+        c.position = c.position.Add(right.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 4: // Zoom in
+        c.position = c.position.Sub(up.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 5: // Zoom out
+        c.position = c.position.Add(up.Mul(amount))
+        c.target = c.position.Add(forward)
+    case 6: // Rotate up
+        c.Rotate(-c.orbitSpeed*amount, 0, 0)
+    case 7: // Rotate down
+        c.Rotate(c.orbitSpeed*amount, 0, 0)
+    case 8: // Rotate left
+        c.Rotate(0, -c.orbitSpeed*amount, 0)
+    case 9: // Rotate right
+        c.Rotate(0, c.orbitSpeed*amount, 0)
+    case 10: // Roll left (Not applicable in RTS mode)
+    case 11: // Roll right (Not applicable in RTS mode)
+    }
+}
