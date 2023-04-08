@@ -161,28 +161,28 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 }
 
 func (c *Camera) moveFPSMode(direction int, amount float32) {
-	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, 1}).Normalize() // Rotate the negative z-axis using the camera's orientation
+	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize() // Rotate the negative z-axis using the camera's orientation
 	right := c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize()    // Rotate the x-axis using the camera's orientation
 	up := c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()       // Rotate the y-axis using the camera's orientation
 
 	switch direction {
 	case 0: // Move forward
-		c.position = c.position.Sub(forward.Mul(amount))
-
-	case 1: // Move backward
 		c.position = c.position.Add(forward.Mul(amount))
 
-	case 2: // Strafe left
-		c.position = c.position.Add(right.Mul(amount))
+	case 1: // Move backward
+		c.position = c.position.Sub(forward.Mul(amount))
 
-	case 3: // Strafe right
+	case 2: // Strafe left
 		c.position = c.position.Sub(right.Mul(amount))
 
+	case 3: // Strafe right
+		c.position = c.position.Add(right.Mul(amount))
+
 	case 4: // Move up
-		c.position = c.position.Sub(up.Mul(amount))
+		c.position = c.position.Add(up.Mul(amount))
 
 	case 5: // Move down
-		c.position = c.position.Add(up.Mul(amount))
+		c.position = c.position.Sub(up.Mul(amount))
 
 	case 6: // Pitch up
 		c.Rotate(-amount, 0, 0)
