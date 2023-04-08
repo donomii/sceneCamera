@@ -35,6 +35,9 @@ func (c *Camera) Dump() {
 	fmt.Println("Camera target:", c.target)
 	fmt.Println("Camera rotation:", c.orientation)
 	fmt.Println("Camera mode:", c.mode)
+	fmt.Println("Forward:", c.ForwardsVector())
+	fmt.Println("Right:", c.RightWardsVector())
+	fmt.Println("Up:", c.UpwardsVector())
 }
 
 func (c *Camera) LookAt(x, y, z float32) {
@@ -165,15 +168,23 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 }
 
 func (c *Camera) ForwardsVector() mgl32.Vec3 {
-	return c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize()
+	toTarget := c.target.Sub(c.position).Normalize()
+	forward := toTarget
 }
 
 func (c *Camera) RightWardsVector() mgl32.Vec3 {
-	return c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize()
+	toTarget := c.target.Sub(c.position).Normalize()
+	forward := toTarget
+	right := forward.Cross(c.up).Normalize()
+	return right
 }
 
 func (c *Camera) UpwardsVector() mgl32.Vec3 {
-	return c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()
+	toTarget := c.target.Sub(c.position).Normalize()
+	forward := toTarget
+	right := forward.Cross(c.up).Normalize()
+	up := right.Cross(forward).Normalize()
+	return up
 }
 
 func (c *Camera) moveFPSMode(direction int, amount float32) {
