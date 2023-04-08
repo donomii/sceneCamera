@@ -26,8 +26,7 @@ func New(mode int) *Camera {
 		mode:        mode,
 		groundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
 	}
-	viewMatrix := mgl32.LookAtV(c.position, c.target, c.up)
-	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
+	c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	return c
 }
 
@@ -344,7 +343,7 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.target = c.position.Add(forward)
 	case 8: // Orbit left
 		//Rotate the camera around the target by the specified amount
-
+		//FIXME rotate around the ground plane normal, not the axis
 		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
 		fmt.Printf("new_relative_position: %v\n", new_relative_position)
 		c.position = c.target.Add(new_relative_position.Vec3())
@@ -352,18 +351,18 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 9: // Orbit right
 		//Rotate the camera around the target by the specified amount
-
+//FIXME rotate around the ground plane normal, not the axis
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 
 	case 6: //Orbit up
-
+		//FIXME rotate around the camera's right vector, not the axis
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 7: // Orbit down
-
+		//FIXME rotate around the camera's right vector, not the axis
 		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
