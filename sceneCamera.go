@@ -170,6 +170,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 func (c *Camera) ForwardsVector() mgl32.Vec3 {
 	toTarget := c.target.Sub(c.position).Normalize()
 	forward := toTarget
+	return forward
 }
 
 func (c *Camera) RightWardsVector() mgl32.Vec3 {
