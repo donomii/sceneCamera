@@ -56,3 +56,5 @@ An example program is included in the examples directory.  It can be run with
 ## Known issues
 
 RTS mode is not complete, it does not rotate correctly.
+
+It's not fast, but it's fast enough to handle movement in a game.
