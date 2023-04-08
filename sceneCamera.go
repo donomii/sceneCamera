@@ -66,6 +66,19 @@ func (c *Camera) Reset() {
 	c.orientation = mgl32.QuatIdent()
 }
 
+//Move the camera, according to the parameter
+// 0 - forward
+// 1 - backward
+// 2 - left
+// 3 - right
+// 4 - up
+// 5 - down
+// 6 - pitch up
+// 7 - pitch down
+// 8 - yaw left
+// 9 - yaw right
+// 10 - roll left
+// 11 - roll right
 func (c *Camera) Move(direction int, amount float32) {
 	switch c.mode {
 	case 1:
@@ -108,7 +121,6 @@ forward := c.target.Sub(c.position).Normalize()
         c.position = c.position.Sub(forward.Mul(amount))
         c.target = c.position.Add(forward)
     case 2: // Orbit left
-        c.Rotate(0, -c.orbitSpeed*amount, 0)
     case 3: // Orbit right
         c.Rotate(0, c.orbitSpeed*amount, 0)
     case 4: // Orbit up
