@@ -27,6 +27,8 @@ func New(mode int) *Camera {
 		groundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
 	}
 	if mode == 3 {
+		c.up = mgl32.Vec3{0.0, 0.0, 1.0}
+		c.position = mgl32.Vec3{5.0, 5.0, 5.0}
 		//In RTS mode, set the initial target to a point on the ground plane
 		forward := c.ForwardsVector()
 		c.target = PlaneIntercept(c.groundPlaneNormal, c.position, forward)
