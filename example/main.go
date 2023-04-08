@@ -1,231 +1,283 @@
 package main
 
+//go:generate go mod init github.com/donomii/splash-screen
+//go:generate go mod tidy
+
 import (
-	Cameras ".."
+	"context"
+	"flag"
 	"fmt"
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/go-gl/mathgl/mgl32"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
-	"strings"
+	"runtime/debug"
+	"time"
+
+	"github.com/donomii/goof"
+	"github.com/mattn/go-shellwords"
+
+	//"time"
+
+	"github.com/go-gl/mathgl/mgl32"
+
+	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/donomii/sceneCamera"
+
+	_ "embed"
 )
 
-const (
-	width  = 800
-	height = 600
-)
+//go:embed logo.png
+var logo_bytes []byte
 
-var vertexShaderSource = `#version 410
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
-
-out vec3 vColor;
-
-uniform mat4 u_MVP;
-
-void main()
-{
-    gl_Position = u_MVP * vec4(aPos, 1.0);
-    vColor = aColor;
-}
-` + "\x00"
-
-var fragmentShaderSource = `#version 410
-in vec3 vColor;
-
-out vec4 FragColor;
-
-void main()
-{
-    FragColor = vec4(vColor, 1.0);
-}
-
-` + "\x00"
-
-func main() {
+// Arrange that main.main runs on main thread.
+func init() {
 	runtime.LockOSThread()
+	debug.SetGCPercent(-1)
+}
 
-	// Initialize GLFW
-	if err := glfw.Init(); err != nil {
-		panic(fmt.Errorf("could not initialize glfw: %v", err))
+type State struct {
+	prop           int32
+	Program        uint32
+	Vao            uint32
+	Vbo            uint32
+	Texture        uint32
+	TextureUniform int32
+	VertAttrib     uint32
+	Angle          float64
+	PreviousTime   float64
+	ModelUniform   int32
+	TexCoordAttrib uint32
+}
+
+var winWidth = 180
+var winHeight = 180
+var lasttime float64
+
+
+var launchShellList arrayFlags
+var launchList arrayFlags
+var runningProcs []context.CancelFunc
+
+func drainChannel(ch chan []byte) {
+	for {
+		<-ch
 	}
-	defer glfw.Terminate()
+}
+var camera *Cameras.Camera
+func main() {
+	flag.Var(&launchShellList, "launchShell", "Run shell command at start.  May be repeated to launch multiple commands.")
+	flag.Var(&launchList, "launch", "Command line to start an app.  May be repeated to launch multiple apps.")
+	flag.Parse()
+	for _, commandStr := range launchShellList {
+		ctx, cancel := context.WithCancel(context.Background())
+		command := exec.CommandContext(ctx, "/bin/sh", "-c", commandStr)
+		_, out, err := goof.WrapCmd(command, 3)
+		runningProcs = append(runningProcs, cancel)
+		go drainChannel(out)
+		go drainChannel(err)
+	}
 
-	// Create GLFW window
+	camera = Cameras.New(3)
+	camera.SetPosition(10,10,10)
+	camera.SetUp(0,0,1)
+	currentDir, _ := os.Getwd()
+	for _, commandStr := range launchList {
+		log.Printf("Launching %v", commandStr)
+		os.Chdir(currentDir)
+		args, _ := shellwords.Parse(commandStr)
+		directory := filepath.Dir(args[0])
+		os.Chdir(directory)
+		exe := "./" + filepath.Base(args[0])
+		log.Printf("Exe %v", exe)
+		log.Printf("In dir %v", directory)
+		ctx, cancel := context.WithCancel(context.Background())
+		command := exec.CommandContext(ctx, exe, args[1:]...)
+		_, out, err := goof.WrapCmd(command, 3)
+		runningProcs = append(runningProcs, cancel)
+		go drainChannel(out)
+		go drainChannel(err)
+	}
+	os.Chdir(currentDir)
+	log.Println("Starting windowing system")
+	if err := glfw.Init(); err != nil {
+		panic(err)
+	}
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-	win, err := glfw.CreateWindow(width, height, "Cube Demo", nil, nil)
+	win, err := glfw.CreateWindow(winWidth, winHeight, "Grafana", nil, nil)
 	if err != nil {
-		panic(fmt.Errorf("could not create glfw window: %v", err))
+		panic(err)
 	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		win.Iconify()
+	}()
+
 	win.MakeContextCurrent()
 
-	// Initialize OpenGL
+	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		log.Printf("Got key %c,%v,%v,%v", key, key, mods, action)
+		handleKey(w, key, scancode, action, mods)
+	})
+
+	win.SetMouseButtonCallback(handleMouseButton)
+
+	win.SetCursorPosCallback(handleMouseMove)
+
 	if err := gl.Init(); err != nil {
-		panic(fmt.Errorf("could not initialize OpenGL: %v", err))
+		panic(err)
 	}
-	gl.Viewport(0, 0, int32(width), int32(height))
 
-	// Setup OpenGL resources for rendering the cube
-	setupOpenGL()
+	state := &State{
+		prop: 1,
+	}
 
-	camera := Cameras.New(2)
-	camera.LookAt(0, 0, 0)
-	camera.Move(2, 1.0)
+	version := gl.GoStr(gl.GetString(gl.VERSION))
+	fmt.Println("OpenGL version", version)
 
-	// Main loop
+	// Configure the vertex and fragment shaders
+	state.Program, err = newProgram(vertexShader, fragmentShader)
+	if err != nil {
+		panic(err)
+	}
+
+	//Activate the program we just created.  This means we will use the render and fragment shaders we compiled above
+	gl.UseProgram(state.Program)
+
+	//Set a default projection matrix
+	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(winWidth)/float32(winHeight), 0.001, 1000.0)
+	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
+	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+
+	//Setup the camera
+	camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+
+	//Setup the cube
+	model := mgl32.Ident4()
+	state.ModelUniform = gl.GetUniformLocation(state.Program, gl.Str("model\x00"))
+	gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
+
+	//Find the location of the texture, so we can upload a picture to it
+	state.TextureUniform = gl.GetUniformLocation(state.Program, gl.Str("tex\x00"))
+	gl.Uniform1i(state.TextureUniform, 0)
+
+	//This is the variable in the fragment shader that will hold the colour for each pixel
+	gl.BindFragDataLocation(state.Program, 0, gl.Str("outputColor\x00"))
+
+	// Load the texture
+	state.Texture, err = newTexture(logo_bytes)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Configure the vertex data
+	gl.GenVertexArrays(1, &state.Vao)
+	gl.BindVertexArray(state.Vao)
+
+	gl.GenBuffers(1, &state.Vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, state.Vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices)*4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
+	checkGlError()
+	state.VertAttrib = uint32(gl.GetAttribLocation(state.Program, gl.Str("vert\x00")))
+	gl.EnableVertexAttribArray(state.VertAttrib)
+	gl.VertexAttribPointer(state.VertAttrib, 3, gl.FLOAT, false, 5*4, gl.PtrOffset(0))
+	checkGlError()
+	state.TexCoordAttrib = uint32(gl.GetAttribLocation(state.Program, gl.Str("vertTexCoord\x00")))
+	gl.EnableVertexAttribArray(state.TexCoordAttrib)
+	gl.VertexAttribPointer(state.TexCoordAttrib, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	checkGlError()
+
+	// Configure global settings
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+	gl.UseProgram(state.Program)
+	gl.ClearColor(1.0, 1.0, 1.0, 0.0)
+
+	//Activate the cube data, which will be drawn
+	gl.BindVertexArray(state.Vao)
+
+	//Choose the texture we just created and uploaded
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, state.Texture)
+
 	for !win.ShouldClose() {
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		// Handle input
-		handleInput(win, camera)
-
-		// Render the cube
-		//Get the window size
-
-		windowWidth, windowHeight := win.GetFramebufferSize()
-		renderCube(camera, windowWidth, windowHeight)
-
-		// Swap buffers
-		win.SwapBuffers()
+		gfxMain(win, state)
 		glfw.PollEvents()
 	}
-}
-
-func handleInput(win *glfw.Window, camera *Cameras.Camera) {
-	// Process input (WASD, mouse to pitch and yaw, and mouse button to switch modes)
-}
-
-func renderCube(camera *Cameras.Camera, windowWidth, windowHeight int) {
-	// Set up the projection matrix
-	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(windowWidth)/float32(windowHeight), 0.1, 100.0)
-
-	// Set up the model matrix
-	model := mgl32.Ident4()
-
-	// Calculate the MVP matrix
-	MVP := projection.Mul4(camera.ViewMatrix()).Mul4(model)
-
-	// Render the cube using the MVP matrix
-	gl.UseProgram(shaderProgram)
-
-	//Set the u_MVP uniform in the shader program to the MVP matrix
-	gl.ProgramUniformMatrix4x2fv(shaderProgram, mvpLocation, 1, false, &MVP[0])
-
-	gl.DrawArrays(gl.TRIANGLES, 0, 24)
+	shutdown()
 
 }
 
-var (
-	cubeVAO       uint32
-	cubeVBO       uint32
-	cubeEBO       uint32
-	shaderProgram uint32
-	mvpLocation   int32
-)
-
-func setupOpenGL() {
-	// Cube vertices and colors
-	cubeVertices := []float32{
-		// Positions          // Colors
-		-0.5, -0.5, -0.5, 1.0, 0.0, 0.0,
-		0.5, -0.5, -0.5, 0.0, 1.0, 0.0,
-		0.5, 0.5, -0.5, 0.0, 0.0, 1.0,
-		-0.5, 0.5, -0.5, 1.0, 1.0, 0.0,
-		-0.5, -0.5, 0.5, 0.0, 1.0, 1.0,
-		0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
-		0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
-		-0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+func shutdown() {
+	for x, cancelF := range runningProcs {
+		log.Printf("Stopping sub-process %v", x)
+		cancelF()
 	}
-
-	cubeIndices := []uint32{
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4,
-		0, 1, 5, 5, 4, 0,
-		2, 3, 7, 7, 6, 2,
-		0, 3, 7, 7, 4, 0,
-		1, 2, 6, 6, 5, 1,
-	}
-
-	// Compile shaders
-	vertexShader := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
-	fragmentShader := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
-
-	// Create shader program
-	shaderProgram = gl.CreateProgram()
-	gl.AttachShader(shaderProgram, vertexShader)
-	gl.AttachShader(shaderProgram, fragmentShader)
-	gl.LinkProgram(shaderProgram)
-
-	var status int32
-	gl.GetProgramiv(shaderProgram, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetProgramiv(shaderProgram, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(shaderProgram, logLength, nil, gl.Str(log))
-
-		panic(fmt.Errorf("failed to link program: %v", log))
-	}
-
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
-
-	// Get the MVP uniform location
-	mvpLocation = gl.GetUniformLocation(shaderProgram, gl.Str("u_MVP\x00"))
-
-	// Create vertex array object (VAO)
-	gl.GenVertexArrays(1, &cubeVAO)
-	gl.BindVertexArray(cubeVAO)
-
-	// Create vertex buffer object (VBO)
-	gl.GenBuffers(1, &cubeVBO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, cubeVBO)
-	gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices)*4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
-
-	// Create element buffer object (EBO)
-	gl.GenBuffers(1, &cubeEBO)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeEBO)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(cubeIndices)*4, gl.Ptr(cubeIndices), gl.STATIC_DRAW)
-
-	// Position attribute
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
-	gl.EnableVertexAttribArray(0)
-
-	// Color attribute
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(1)
-
-	// Unbind VAO, VBO, and EBO
-	gl.BindVertexArray(0)
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
 }
 
-func compileShader(source string, shaderType uint32) uint32 {
-	shader := gl.CreateShader(shaderType)
+func gfxMain(win *glfw.Window, state *State) {
+	//fmt.Println("Draw")
+	//width, height := win.GetSize()
+	//gl.Viewport(0, 0, int32(width-1), int32(height-1))
 
-	csources, free := gl.Strs(source)
-	gl.ShaderSource(shader, 1, csources, nil)
-	free()
-	gl.CompileShader(shader)
+	// Render
 
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
+	// Update
 
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
+	now := glfw.GetTime()
+	elapsed := now - state.PreviousTime
 
-		panic(fmt.Errorf("failed to compile %v: %v", source, log))
+	if elapsed > 0.050 && 1 != win.GetAttrib(glfw.Iconified) {
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		//fmt.Printf("elapsed: %v\n", elapsed)
+		state.PreviousTime = now
+		angle := state.Angle
+		angle += elapsed
+		state.Angle = angle
+
+		for i:=-10; i<11; i++ {
+			for j:=-10; j<11; j++ {
+
+		model := mgl32.Ident4()
+		model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2,0))
+		//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
+
+			//Setup the camera
+			
+			//camera.LookAt(0,0,0)
+	viewMatrix := camera.ViewMatrix()
+
+	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
+
+		// Render
+
+		gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
+
+		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+
+			}}
+		win.SwapBuffers()
+
+	}
+	time.Sleep(10 * time.Millisecond)
+}
+
+func checkGlError() {
+
+	err := gl.GetError()
+	if err > 0 {
+		errStr := fmt.Sprintf("GLerror: %v\n", err)
+		fmt.Printf(errStr)
+		panic(errStr)
 	}
 
-	return shader
 }

@@ -15,7 +15,10 @@ type Camera struct {
 	mode              int
 	groundPlaneNormal mgl32.Vec3
 }
-
+//Choose the mode of the camera.
+// 1 - Museum mode
+// 2 - FPS mode
+// 3 - RTS mode
 func New(mode int) *Camera {
 
 	c := &Camera{
@@ -42,6 +45,20 @@ func (c *Camera) SetUp(x, y, z float32) {
 	c.up = mgl32.Vec3{x, y, z}
 }
 
+//Choose the mode of the camera.
+// 1 - Museum mode
+// 2 - FPS mode
+// 3 - RTS mode
+func (c *Camera) SetMode(mode int) {
+	c.mode = mode
+}
+
+//Set the normal of the ground plane.  This is used in RTS mode, and ignored in other modes.
+func (c *Camera) SetGroundPlaneNormal(x, y, z float32) {
+	c.groundPlaneNormal = mgl32.Vec3{x, y, z}
+}
+
+//Print some information about the camera to stdout
 func (c *Camera) Dump() {
 	fmt.Println("Camera position:", c.position)
 	fmt.Println("Camera target:", c.target)
@@ -52,27 +69,34 @@ func (c *Camera) Dump() {
 	fmt.Println("Up:", c.UpwardsVector())
 }
 
+// One of the more important functions, LookAt sets the target of the camera.
 func (c *Camera) LookAt(x, y, z float32) {
 	c.target = mgl32.Vec3{x, y, z}
 	c.orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.position, c.target, c.up))
 }
 
+//Returns the position of the camera in world space
 func (c *Camera) Position() (float32, float32, float32) {
 	return c.position.X(), c.position.Y(), c.position.Z()
 }
 
+//Returns the rotation matrix of the camera.  (the rotation part of the view matrix)
 func (c *Camera) RotationMatrix() mgl32.Mat4 {
 	return c.orientation.Mat4()
 }
 
+/*
 func (c *Camera) EulerMatrix() mgl32.Mat4 {
 	return c.orientation.Mat4()
 }
+*/
 
+//Teleport to a position in world space
 func (c *Camera) SetPosition(x, y, z float32) {
 	c.position = mgl32.Vec3{x, y, z}
 }
 
+//Return the ViewMatrix for the camera.  This is the matrix that transforms world space to camera space.  It contains both the rotation and translation of the camera.  It can be passed directly to OpenGL as the ViewMatrix, and used in GLSL shaders as the ViewMatrix.
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
 
 	rotation := c.orientation.Mat4()
@@ -86,6 +110,7 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	//return c.orientation.Mat4()
 }
 
+//Reset the camera to its initial position
 func (c *Camera) Reset() {
 	c.position = mgl32.Vec3{0.0, 0.0, 5.0}
 	c.target = mgl32.Vec3{0.0, 0.0, 0.0}
@@ -119,10 +144,12 @@ func (c *Camera) Move(direction int, amount float32) {
 
 }
 
+//Move the camera through world space
 func (c *Camera) Translate(x, y, z float32) {
 	c.position = c.position.Add(mgl32.Vec3{x, y, z})
 }
 
+//Rotate the camera, probably not around the axes that you want
 func (c *Camera) Rotate(x, y, z float32) {
 	quatX := mgl32.QuatRotate(x, mgl32.Vec3{1, 0, 0})
 	quatY := mgl32.QuatRotate(y, mgl32.Vec3{0, 1, 0})
@@ -199,14 +226,14 @@ func (c *Camera) UpwardsVector() mgl32.Vec3 {
 	return up
 }
 
-// Scenecam keeps an invisible target point to which the camera is always looking.  Not normalised.
+// Scenecam keeps an invisible target point to which the camera is always looking.  Not normalised.  This is the vector from the camera to the target.
 // This is not the object that the camera is following
 func (c *Camera) TargetVector() mgl32.Vec3 {
 	toTarget := c.target.Sub(c.position)
 	return toTarget
 }
 
-// The position of the target, in world space
+// The position of the target, in world space.
 // This is not the object that the camera is following
 func (c *Camera) TargetPosition() mgl32.Vec3 {
 	return c.target
@@ -265,6 +292,7 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 	c.orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.position, c.target, c.up))
 }
 
+//Project a vector onto a plane, given the normal of the plane, where v1 is the normal of the plane and v2 is the vector to be projected
 func ProjectPlane(v1, v2 mgl32.Vec3) mgl32.Vec3 {
 	//Project v2 onto v1
 	//v1 is the normal of the plane
@@ -274,13 +302,15 @@ func ProjectPlane(v1, v2 mgl32.Vec3) mgl32.Vec3 {
 	d := v1.Dot(v2)
 	return v2.Sub(v1.Mul(d))
 }
-
-func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
-	//Find the point on the plane that the ray intercepts
+//Find the point on the plane that the ray intercepts
 	//groundNormal is the normal of the plane
 	//rayOrigin is the origin of the ray
 	//rayDirection is the direction of the ray
 	//Returns the point on the plane that the ray intercepts
+	//
+	//The plane is assumed to pass through the origin
+func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
+	
 	groundNormal = groundNormal.Normalize()
 	rayDirection = rayDirection.Normalize()
 	d := groundNormal.Dot(rayDirection)
@@ -292,6 +322,8 @@ func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3
 	return rayOrigin.Add(rayDirection.Mul(t))
 }
 
+//Find the point on the plane that the ray intercepts
+// as for PlaneIntercept, but the plane is not assumed to pass through the origin
 func PlaneIntercept2(groundOrigin, groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
 	//Find the point on the plane that the ray intercepts
 	//groundOrigin is a point on the plane
