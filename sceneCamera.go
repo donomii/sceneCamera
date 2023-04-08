@@ -125,8 +125,11 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 	case 2: // Orbit left
 		//Rotate the camera around the target by the specified amount
         relativePosition := c.position.Sub(c.target)
+		fmt.Printf("relativePosition: %v\n", relativePosition)
 		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
+		fmt.Printf("new_relative_position: %v\n", new_relative_position)
 		c.position = c.target.Add(new_relative_position.Vec3())
+		fmt.Printf("c.position: %v\n", c.position)
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 3: // Orbit right
 		//Rotate the camera around the target by the specified amount
