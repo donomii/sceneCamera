@@ -62,13 +62,16 @@ func (c *Camera) SetPosition(x, y, z float32) {
 
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
 
-	return c.orientation.Mat4()
+	rotation := c.orientation.Mat4()
+	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
+	return rotation.Mul4(translation)
 }
 
 func (c *Camera) Reset() {
 	c.position = mgl32.Vec3{0.0, 0.0, 5.0}
 	c.target = mgl32.Vec3{0.0, 0.0, 0.0}
-	c.orientation = mgl32.QuatIdent()
+	viewMatrix := mgl32.LookAtV(c.position, c.target, c.up)
+	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
 }
 
 //Move the camera, according to the parameter
@@ -115,18 +118,20 @@ func (c *Camera) EulerAngles() (float32, float32, float32) {
 func (c *Camera) moveMuseumMode(direction int, amount float32) {
 	// Assuming c.orientation is a quaternion representing the camera's orientation
 	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, 1}).Normalize() 
+	relativePosition := c.position.Sub(c.target)
+	fmt.Printf("relativePosition: %v\n", relativePosition)
 
+	
 	switch direction {
 	case 0: // Zoom in
 		c.position = c.position.Add(forward.Mul(amount))
-	
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 1: // Zoom out
 		c.position = c.position.Sub(forward.Mul(amount))
-		
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 2: // Orbit left
 		//Rotate the camera around the target by the specified amount
-        relativePosition := c.position.Sub(c.target)
-		fmt.Printf("relativePosition: %v\n", relativePosition)
+        
 		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
 		fmt.Printf("new_relative_position: %v\n", new_relative_position)
 		c.position = c.target.Add(new_relative_position.Vec3())
@@ -134,7 +139,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 3: // Orbit right
 		//Rotate the camera around the target by the specified amount
-		relativePosition := c.position.Sub(c.target)
+		
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
