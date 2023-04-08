@@ -331,11 +331,11 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.target = c.position.Add(forward)
 
 	case 2: // Pan left
-		c.position = c.position.Sub(groundRightVec.Mul(amount))
+		c.position = c.position.Add(groundRightVec.Mul(amount))
 		c.target = c.position.Add(forward)
 
 	case 3: // Pan right
-		c.position = c.position.Add(groundRightVec.Mul(amount))
+		c.position = c.position.Sub(groundRightVec.Mul(amount))
 		c.target = c.position.Add(forward)
 
 	case 10: // Roll left (Not applicable in RTS mode)
