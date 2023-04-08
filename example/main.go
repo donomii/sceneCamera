@@ -73,7 +73,7 @@ func main() {
 	// Setup OpenGL resources for rendering the cube
 	setupOpenGL()
 
-	camera := Cameras.New(1)
+	camera := Cameras.New(2)
 	camera.LookAt(0, 0, 0)
 	camera.Move(2, 1.0)
 
