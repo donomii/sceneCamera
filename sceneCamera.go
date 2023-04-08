@@ -39,6 +39,7 @@ func (c *Camera) Dump() {
 
 func (c *Camera) LookAt(x, y, z float32) {
 	c.target = mgl32.Vec3{x, y, z}
+	c.orientation = mgl32.Mat4ToQuat( mgl32.LookAtV(c.position, c.target, c.up))
 }
 
 func (c *Camera) Position() (float32, float32, float32) {
