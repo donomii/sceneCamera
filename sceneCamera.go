@@ -65,8 +65,11 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
 
-	//return rotation.Mul4(translation)
-	return translation.Mul4(rotation)
+	if c.mode == 1 {
+		return translation.Mul4(rotation)
+	} 
+	return rotation.Mul4(translation)
+	
 	
 	//return c.orientation.Mat4()
 }
@@ -206,9 +209,9 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 	case 7: // Pitch down
 		c.Rotate(amount, 0, 0)
 	case 8: // Yaw left
-		c.Rotate(0, -amount, 0)
-	case 9: // Yaw right
 		c.Rotate(0, amount, 0)
+	case 9: // Yaw right
+		c.Rotate(0, -amount, 0)
 	case 10: // Roll left
 		c.Rotate(0, 0, -amount)
 	case 11: // Roll right
