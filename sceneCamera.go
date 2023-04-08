@@ -143,10 +143,17 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
-	case 4: // Orbit up
-		c.Rotate(-amount, 0, 0)
+		case 4: //Orbit up
+
+		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
+		c.position = c.target.Add(new_relative_position.Vec3())
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 5: // Orbit down
-		c.Rotate(amount, 0, 0)
+
+		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
+		c.position = c.target.Add(new_relative_position.Vec3())
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+	
 	case 6: // Pitch up (Not applicable in museum mode)
 	case 7: // Pitch down (Not applicable in museum mode)
 	case 8: // Yaw left (Not applicable in museum mode)
