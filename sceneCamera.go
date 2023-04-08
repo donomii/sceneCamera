@@ -124,8 +124,8 @@ func (c *Camera) EulerAngles() (float32, float32, float32) {
 */
 
 func (c *Camera) moveMuseumMode(direction int, amount float32) {
-	// Assuming c.orientation is a quaternion representing the camera's orientation
-	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, 1}).Normalize() 
+	toTarget := c.target.Sub(c.position).Normalize()
+	forward := toTarget
 	relativePosition := c.position.Sub(c.target)
 	fmt.Printf("relativePosition: %v\n", relativePosition)
 
