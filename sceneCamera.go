@@ -162,7 +162,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 }
 
 func (c *Camera) ForwardsVector() mgl32.Vec3 {
-	return c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize()
+	return c.orientation.Rotate(mgl32.Vec3{0, 0, 1}).Normalize()
 }
 
 func (c *Camera) RightWardsVector() mgl32.Vec3 {
