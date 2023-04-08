@@ -321,12 +321,15 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 
 	case 1: // Pan backward
 		c.position = c.position.Sub(groundForwardVec.Mul(amount))
+		c.target = c.position.Add(forward)
 
 	case 2: // Pan left
 		c.position = c.position.Sub(groundRightVec.Mul(amount))
+		c.target = c.position.Add(forward)
 
 	case 3: // Pan right
 		c.position = c.position.Add(groundRightVec.Mul(amount))
+		c.target = c.position.Add(forward)
 
 	case 10: // Roll left (Not applicable in RTS mode)
 	case 11: // Roll right (Not applicable in RTS mode)
@@ -334,9 +337,11 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 	case 4: // Zoom in
 		c.position = c.position.Add(forward.Mul(amount))
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+		c.target = c.position.Add(forward)
 	case 5: // Zoom out
 		c.position = c.position.Sub(forward.Mul(amount))
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+		c.target = c.position.Add(forward)
 	case 8: // Orbit left
 		//Rotate the camera around the target by the specified amount
 
@@ -364,5 +369,5 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	}
 
-	c.target = c.position.Add(forward)
+	
 }
