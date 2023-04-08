@@ -19,12 +19,18 @@ type Camera struct {
 func New(mode int) *Camera {
 
 	c := &Camera{
-		position:    mgl32.Vec3{0.0, 0.0, 5.0},
-		target:      mgl32.Vec3{0.0, 0.0, 0.0},
-		up:          mgl32.Vec3{0.0, 1.0, 0.0},
-		orientation: mgl32.QuatIdent(),
-		mode:        mode,
+		position:          mgl32.Vec3{0.0, 0.0, 5.0},
+		target:            mgl32.Vec3{0.0, 0.0, 0.0},
+		up:                mgl32.Vec3{0.0, 1.0, 0.0},
+		orientation:       mgl32.QuatIdent(),
+		mode:              mode,
 		groundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
+	}
+	if mode == 3 {
+		//In RTS mode, set the initial target to a point on the ground plane
+		forward := c.ForwardsVector()
+		c.target = PlaneIntercept(c.groundPlaneNormal, c.position, forward)
+
 	}
 	c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	return c
@@ -72,7 +78,7 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 
 	//if c.mode == 1 {
 	//	return translation.Mul4(rotation)
-	//} 
+	//}
 	return rotation.Mul4(translation)
 
 	//return c.orientation.Mat4()
@@ -147,7 +153,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
-		case 4: //Orbit up
+	case 4: //Orbit up
 
 		new_relative_position := mgl32.HomogRotate3DX(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
@@ -157,7 +163,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		new_relative_position := mgl32.HomogRotate3DX(amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
-	
+
 	case 6: // Pitch up (Not applicable in museum mode)
 	case 7: // Pitch down (Not applicable in museum mode)
 	case 8: // Yaw left (Not applicable in museum mode)
@@ -351,7 +357,7 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 9: // Orbit right
 		//Rotate the camera around the target by the specified amount
-//FIXME rotate around the ground plane normal, not the axis
+		//FIXME rotate around the ground plane normal, not the axis
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
@@ -368,5 +374,4 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	}
 
-	
 }
