@@ -68,9 +68,9 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
 
-	if c.mode == 1 {
-		return translation.Mul4(rotation)
-	} 
+	//if c.mode == 1 {
+	//	return translation.Mul4(rotation)
+	//} 
 	return rotation.Mul4(translation)
 	
 	
