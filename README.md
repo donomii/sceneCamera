@@ -8,10 +8,11 @@ Easy 3D camera management
 Description
 ===========
 
-SceneCamera manages the camera view for 3D applications.  It provides the V in the GL trinity MVP.  It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the viewmatrix into your graphics library's matrix format.
-
+SceneCamera manages the camera view for 3D applications.  It provides the V in the GL trinity MVP.  
 
 It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
+
+It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the viewmatrix into your graphics library's matrix format.
 
 ### Museum mode
 Museum mode is a simple camera that orbits around a point, and can zoom in and out.  Draw your object at the origin, and the camera will orbit around it.  It is useful for inspecting 3D models from all angles.
