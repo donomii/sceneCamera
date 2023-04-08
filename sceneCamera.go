@@ -8,11 +8,12 @@ import (
 )
 
 type Camera struct {
-	position    mgl32.Vec3
-	target      mgl32.Vec3
-	up          mgl32.Vec3
-	orientation mgl32.Quat
-	mode        int
+	position          mgl32.Vec3
+	target            mgl32.Vec3
+	up                mgl32.Vec3
+	orientation       mgl32.Quat
+	mode              int
+	groundPlaneNormal mgl32.Vec3
 }
 
 func New(mode int) *Camera {
@@ -42,18 +43,16 @@ func (c *Camera) Dump() {
 
 func (c *Camera) LookAt(x, y, z float32) {
 	c.target = mgl32.Vec3{x, y, z}
-	c.orientation = mgl32.Mat4ToQuat( mgl32.LookAtV(c.position, c.target, c.up))
+	c.orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.position, c.target, c.up))
 }
 
 func (c *Camera) Position() (float32, float32, float32) {
 	return c.position.X(), c.position.Y(), c.position.Z()
 }
 
-
 func (c *Camera) RotationMatrix() mgl32.Mat4 {
 	return c.orientation.Mat4()
 }
-
 
 func (c *Camera) EulerMatrix() mgl32.Mat4 {
 	return c.orientation.Mat4()
@@ -72,8 +71,7 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	//	return translation.Mul4(rotation)
 	//} 
 	return rotation.Mul4(translation)
-	
-	
+
 	//return c.orientation.Mat4()
 }
 
@@ -84,7 +82,7 @@ func (c *Camera) Reset() {
 	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
 }
 
-//Move the camera, according to the parameter
+// Move the camera, according to the parameter
 // 0 - forward
 // 1 - backward
 // 2 - left
@@ -106,7 +104,7 @@ func (c *Camera) Move(direction int, amount float32) {
 	case 3:
 		c.moveRTSMode(direction, amount)
 	}
-	
+
 }
 
 func (c *Camera) Translate(x, y, z float32) {
@@ -120,19 +118,10 @@ func (c *Camera) Rotate(x, y, z float32) {
 	c.orientation = c.orientation.Mul(quatX).Mul(quatY).Mul(quatZ)
 }
 
-/*
-func (c *Camera) EulerAngles() (float32, float32, float32) {
-	return c.Rotation()
-}
-*/
-
 func (c *Camera) moveMuseumMode(direction int, amount float32) {
-	toTarget := c.target.Sub(c.position).Normalize()
-	forward := toTarget
+	forward := c.ForwardsVector()
 	relativePosition := c.position.Sub(c.target)
-	fmt.Printf("relativePosition: %v\n", relativePosition)
 
-	
 	switch direction {
 	case 0: // Zoom in
 		c.position = c.position.Add(forward.Mul(amount))
@@ -142,7 +131,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 2: // Orbit left
 		//Rotate the camera around the target by the specified amount
-        
+
 		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
 		fmt.Printf("new_relative_position: %v\n", new_relative_position)
 		c.position = c.target.Add(new_relative_position.Vec3())
@@ -150,7 +139,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	case 3: // Orbit right
 		//Rotate the camera around the target by the specified amount
-		
+
 		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
 		c.position = c.target.Add(new_relative_position.Vec3())
 		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
@@ -167,12 +156,14 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 	}
 }
 
+// The forward unit vector of the camera, in world space
 func (c *Camera) ForwardsVector() mgl32.Vec3 {
-	toTarget := c.target.Sub(c.position).Normalize()
-	forward := toTarget
+	toTarget := c.target.Sub(c.position)
+	forward := toTarget.Normalize()
 	return forward
 }
 
+// The right unit vector of the camera, in world space
 func (c *Camera) RightWardsVector() mgl32.Vec3 {
 	toTarget := c.target.Sub(c.position).Normalize()
 	forward := toTarget
@@ -180,6 +171,7 @@ func (c *Camera) RightWardsVector() mgl32.Vec3 {
 	return right
 }
 
+// The up unit vector of the camera, in world space
 func (c *Camera) UpwardsVector() mgl32.Vec3 {
 	toTarget := c.target.Sub(c.position).Normalize()
 	forward := toTarget
@@ -188,15 +180,24 @@ func (c *Camera) UpwardsVector() mgl32.Vec3 {
 	return up
 }
 
-func (c *Camera) moveFPSMode(direction int, amount float32) {
-	toTarget := c.target.Sub(c.position).Normalize()
-	forward := toTarget
-	right := forward.Cross(c.up).Normalize()
-	up := right.Cross(forward).Normalize()
+// Scenecam keeps an invisible target point to which the camera is always looking.  Not normalised.
+// This is not the object that the camera is following
+func (c *Camera) TargetVector() mgl32.Vec3 {
+	toTarget := c.target.Sub(c.position)
+	return toTarget
+}
 
-	fmt.Printf("forward: %v\n", forward)
-	fmt.Printf("right: %v\n", right)
-	fmt.Printf("up: %v\n", up)
+// The position of the target, in world space
+// This is not the object that the camera is following
+func (c *Camera) TargetPosition() mgl32.Vec3 {
+	return c.target
+}
+
+func (c *Camera) moveFPSMode(direction int, amount float32) {
+	toTarget := c.TargetVector()
+	forward := c.ForwardsVector()
+	right := c.RightWardsVector()
+	up := c.UpwardsVector()
 
 	switch direction {
 	case 0: // Move forward
@@ -218,11 +219,11 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 		c.position = c.position.Sub(up.Mul(amount))
 		c.target = c.position.Add(toTarget)
 	case 6: // Pitch up
-	//Rotate target around the camera's right vector by the specified amount
+		//Rotate target around the camera's right vector by the specified amount
 		newTarget := mgl32.HomogRotate3D(amount, right).Mul4x1(toTarget.Vec4(0))
-		c.target = c.position.Add(newTarget.Vec3())	
+		c.target = c.position.Add(newTarget.Vec3())
 	case 7: // Pitch down
-	//Rotate target around the camera's right vector by the specified amount
+		//Rotate target around the camera's right vector by the specified amount
 		newTarget := mgl32.HomogRotate3D(-amount, right).Mul4x1(toTarget.Vec4(0))
 		c.target = c.position.Add(newTarget.Vec3())
 	case 8: // Yaw left
@@ -245,39 +246,111 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 	c.orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.position, c.target, c.up))
 }
 
+func ProjectPlane(v1, v2 mgl32.Vec3) mgl32.Vec3 {
+	//Project v2 onto v1
+	//v1 is the normal of the plane
+	//v2 is the vector to be projected
+	v1 = v1.Normalize()
+	v2 = v2.Normalize()
+	d := v1.Dot(v2)
+	return v2.Sub(v1.Mul(d))
+}
+
+func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
+	//Find the point on the plane that the ray intercepts
+	//groundNormal is the normal of the plane
+	//rayOrigin is the origin of the ray
+	//rayDirection is the direction of the ray
+	//Returns the point on the plane that the ray intercepts
+	groundNormal = groundNormal.Normalize()
+	rayDirection = rayDirection.Normalize()
+	d := groundNormal.Dot(rayDirection)
+	if d == 0 {
+		//Ray is parallel to the plane
+		return mgl32.Vec3{0, 0, 0}
+	}
+	t := -groundNormal.Dot(rayOrigin) / d
+	return rayOrigin.Add(rayDirection.Mul(t))
+}
+
+func PlaneIntercept2(groundOrigin, groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
+	//Find the point on the plane that the ray intercepts
+	//groundOrigin is a point on the plane
+	//groundNormal is the normal of the plane
+	//rayOrigin is the origin of the ray
+	//rayDirection is the direction of the ray
+	//Returns the point on the plane that the ray intercepts
+	groundNormal = groundNormal.Normalize()
+	rayDirection = rayDirection.Normalize()
+	d := groundNormal.Dot(rayDirection)
+	if d == 0 {
+		//Ray is parallel to the plane
+		return mgl32.Vec3{0, 0, 0}
+	}
+	t := groundNormal.Dot(groundOrigin.Sub(rayOrigin)) / d
+	return rayOrigin.Add(rayDirection.Mul(t))
+}
+
 func (c *Camera) moveRTSMode(direction int, amount float32) {
-	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize() // Rotate the negative z-axis using the camera's orientation
-	right := c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize()    // Rotate the x-axis using the camera's orientation
-	up := c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()       // Rotate the y-axis using the camera's orientation
+	forward := c.ForwardsVector()
+	up := c.UpwardsVector()
+
+	//Project the camera's forward vector onto the ground plane, held in c.groundPlaneNormal
+	groundForwardVec := ProjectPlane(c.groundPlaneNormal, forward).Normalize()
+	groundRightVec := up.Cross(groundForwardVec).Normalize()
+	target := PlaneIntercept(c.groundPlaneNormal, c.position, forward)
+	c.target = target
+	//Camera position relative to the target, in this case the ground intercept point
+	relativePosition := c.position.Sub(c.target)
 
 	switch direction {
 	case 0: // Pan forward
-		c.position = c.position.Add(forward.Mul(amount))
-		
+		c.position = c.position.Add(groundForwardVec.Mul(amount))
+
 	case 1: // Pan backward
-		c.position = c.position.Sub(forward.Mul(amount))
-	
+		c.position = c.position.Sub(groundForwardVec.Mul(amount))
+
 	case 2: // Pan left
-		c.position = c.position.Sub(right.Mul(amount))
-		
+		c.position = c.position.Sub(groundRightVec.Mul(amount))
+
 	case 3: // Pan right
-		c.position = c.position.Add(right.Mul(amount))
-		
-	case 4: // Zoom in
-		c.position = c.position.Sub(up.Mul(amount))
-	
-	case 5: // Zoom out
-		c.position = c.position.Add(up.Mul(amount))
-	
-	case 6: // Rotate up
-		c.Rotate(-amount, 0, 0)
-	case 7: // Rotate down
-		c.Rotate(amount, 0, 0)
-	case 8: // Rotate left
-		c.Rotate(0, -amount, 0)
-	case 9: // Rotate right
-		c.Rotate(0, amount, 0)
+		c.position = c.position.Add(groundRightVec.Mul(amount))
+
 	case 10: // Roll left (Not applicable in RTS mode)
 	case 11: // Roll right (Not applicable in RTS mode)
+
+	case 4: // Zoom in
+		c.position = c.position.Add(forward.Mul(amount))
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+	case 5: // Zoom out
+		c.position = c.position.Sub(forward.Mul(amount))
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+	case 8: // Orbit left
+		//Rotate the camera around the target by the specified amount
+
+		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
+		fmt.Printf("new_relative_position: %v\n", new_relative_position)
+		c.position = c.target.Add(new_relative_position.Vec3())
+		fmt.Printf("c.position: %v\n", c.position)
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+	case 9: // Orbit right
+		//Rotate the camera around the target by the specified amount
+
+		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
+		c.position = c.target.Add(new_relative_position.Vec3())
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+
+	case 6: //Orbit up
+
+		new_relative_position := mgl32.HomogRotate3DY(-amount).Mul4x1(relativePosition.Vec4(0))
+		c.position = c.target.Add(new_relative_position.Vec3())
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
+	case 7: // Orbit down
+
+		new_relative_position := mgl32.HomogRotate3DY(amount).Mul4x1(relativePosition.Vec4(0))
+		c.position = c.target.Add(new_relative_position.Vec3())
+		c.LookAt(c.target.X(), c.target.Y(), c.target.Z())
 	}
+
+	c.target = c.position.Add(forward)
 }
