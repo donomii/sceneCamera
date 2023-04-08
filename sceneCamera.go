@@ -332,7 +332,7 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 
 	case 2: // Pan left
 		c.position = c.position.Sub(groundRightVec.Mul(amount))
-		c.target = c.position.Add(forward)
+		c.target = c.position.Sub(forward)
 
 	case 3: // Pan right
 		c.position = c.position.Add(groundRightVec.Mul(amount))
