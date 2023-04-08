@@ -24,6 +24,7 @@ func New(mode int) *Camera {
 		up:          mgl32.Vec3{0.0, 1.0, 0.0},
 		orientation: mgl32.QuatIdent(),
 		mode:        mode,
+		groundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
 	}
 	viewMatrix := mgl32.LookAtV(c.position, c.target, c.up)
 	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
@@ -80,6 +81,7 @@ func (c *Camera) Reset() {
 	c.target = mgl32.Vec3{0.0, 0.0, 0.0}
 	viewMatrix := mgl32.LookAtV(c.position, c.target, c.up)
 	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
+	c.groundPlaneNormal = mgl32.Vec3{0.0, 0.0, 1.0}
 }
 
 // Move the camera, according to the parameter
