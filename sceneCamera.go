@@ -100,6 +100,7 @@ func (c *Camera) Move(direction int, amount float32) {
 	case 3:
 		c.moveRTSMode(direction, amount)
 	}
+	
 }
 
 func (c *Camera) Translate(x, y, z float32) {
@@ -160,11 +161,26 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 	}
 }
 
+func (c *Camera) ForwardsVector() mgl32.Vec3 {
+	return c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize()
+}
+
+func (c *Camera) RightWardsVector() mgl32.Vec3 {
+	return c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize()
+}
+
+func (c *Camera) UpwardsVector() mgl32.Vec3 {
+	return c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()
+}
+
 func (c *Camera) moveFPSMode(direction int, amount float32) {
-	rotMatrix := c.RotationMatrix()
-	forward := rotMatrix.Mul4x1(mgl32.Vec4{0, 0, -1,0}).Normalize().Vec3() // Rotate the negative z-axis using the camera's orientation
-	right :=  rotMatrix.Mul4x1(mgl32.Vec4{1, 0, 0,0}).Normalize().Vec3() // Rotate the x-axis using the camera's orientation
-	up := rotMatrix.Mul4x1(mgl32.Vec4{0, 1, 0,0}).Normalize().Vec3() // Rotate the y-axis using the camera's orientation
+	forward := c.ForwardsVector()
+	right := c.RightWardsVector()
+	up := c.UpwardsVector()
+
+	fmt.Printf("forward: %v\n", forward)
+	fmt.Printf("right: %v\n", right)
+	fmt.Printf("up: %v\n", up)
 
 	switch direction {
 	case 0: // Move forward
