@@ -46,11 +46,11 @@ func (c *Camera) Position() (float32, float32, float32) {
 	return c.position.X(), c.position.Y(), c.position.Z()
 }
 
-/*
-func (c *Camera) Rotation() (float32, float32, float32) {
-	return c.orientation.EulerAngles()
+
+func (c *Camera) RotationMatrix() mgl32.Mat4 {
+	return c.orientation.Mat4()
 }
-*/
+
 
 func (c *Camera) EulerMatrix() mgl32.Mat4 {
 	return c.orientation.Mat4()
@@ -161,9 +161,10 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 }
 
 func (c *Camera) moveFPSMode(direction int, amount float32) {
-	forward := c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize() // Rotate the negative z-axis using the camera's orientation
-	right := c.orientation.Rotate(mgl32.Vec3{1, 0, 0}).Normalize()    // Rotate the x-axis using the camera's orientation
-	up := c.orientation.Rotate(mgl32.Vec3{0, 1, 0}).Normalize()       // Rotate the y-axis using the camera's orientation
+	rotMatrix := c.RotationMatrix()
+	forward := rotMatrix.Mul4x1(mgl32.Vec4{0, 0, -1,0}).Normalize().Vec3() // Rotate the negative z-axis using the camera's orientation
+	right :=  rotMatrix.Mul4x1(mgl32.Vec4{1, 0, 0,0}).Normalize().Vec3() // Rotate the x-axis using the camera's orientation
+	up := rotMatrix.Mul4x1(mgl32.Vec4{0, 1, 0,0}).Normalize().Vec3() // Rotate the y-axis using the camera's orientation
 
 	switch direction {
 	case 0: // Move forward
