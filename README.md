@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/donomii/sceneCamera.svg)](https://pkg.go.dev/github.com/donomii/sceneCamera)
+
 SceneCamera
 ===========
 
