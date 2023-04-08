@@ -29,7 +29,10 @@ func New(mode int) *Camera {
 	viewMatrix := mgl32.LookAtV(c.position, c.target, c.up)
 	c.orientation = mgl32.Mat4ToQuat(viewMatrix)
 	return c
+}
 
+func (c *Camera) SetUp(x, y, z float32) {
+	c.up = mgl32.Vec3{x, y, z}
 }
 
 func (c *Camera) Dump() {
