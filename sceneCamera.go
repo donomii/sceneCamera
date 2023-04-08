@@ -177,9 +177,10 @@ func (c *Camera) UpwardsVector() mgl32.Vec3 {
 }
 
 func (c *Camera) moveFPSMode(direction int, amount float32) {
-	forward := c.ForwardsVector()
-	right := c.RightWardsVector()
-	up := c.UpwardsVector()
+	toTarget := c.target.Sub(c.position).Normalize()
+	forward := toTarget
+	right := forward.Cross(c.up).Normalize()
+	up := right.Cross(forward).Normalize()
 
 	fmt.Printf("forward: %v\n", forward)
 	fmt.Printf("right: %v\n", right)
@@ -188,35 +189,48 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 	switch direction {
 	case 0: // Move forward
 		c.position = c.position.Add(forward.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 1: // Move backward
 		c.position = c.position.Sub(forward.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 2: // Strafe left
 		c.position = c.position.Sub(right.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 3: // Strafe right
 		c.position = c.position.Add(right.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 4: // Move up
 		c.position = c.position.Add(up.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 5: // Move down
 		c.position = c.position.Sub(up.Mul(amount))
-
+		c.target = c.position.Add(toTarget)
 	case 6: // Pitch up
-		c.Rotate(-amount, 0, 0)
+	//Rotate target around the camera's right vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(amount, right).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())	
 	case 7: // Pitch down
-		c.Rotate(amount, 0, 0)
+	//Rotate target around the camera's right vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(-amount, right).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())
 	case 8: // Yaw left
-		c.Rotate(0, amount, 0)
+		//Rotate target around the camera's up vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(amount, up).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())
 	case 9: // Yaw right
-		c.Rotate(0, -amount, 0)
+		//Rotate target around the camera's up vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(-amount, up).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())
 	case 10: // Roll left
-		c.Rotate(0, 0, -amount)
+		//Rotate target around the camera's forward vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(amount, forward).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())
 	case 11: // Roll right
-		c.Rotate(0, 0, amount)
+		//Rotate target around the camera's forward vector by the specified amount
+		newTarget := mgl32.HomogRotate3D(-amount, forward).Mul4x1(toTarget.Vec4(0))
+		c.target = c.position.Add(newTarget.Vec3())
 	}
+	c.orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.position, c.target, c.up))
 }
 
 func (c *Camera) moveRTSMode(direction int, amount float32) {
