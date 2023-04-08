@@ -65,8 +65,8 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
 
-	return rotation.Mul4(translation)
-	//return translation.Mul4(rotation)
+	//return rotation.Mul4(translation)
+	return translation.Mul4(rotation)
 	
 	//return c.orientation.Mat4()
 }
@@ -162,7 +162,7 @@ func (c *Camera) moveMuseumMode(direction int, amount float32) {
 }
 
 func (c *Camera) ForwardsVector() mgl32.Vec3 {
-	return c.orientation.Rotate(mgl32.Vec3{0, 0, 1}).Normalize()
+	return c.orientation.Rotate(mgl32.Vec3{0, 0, -1}).Normalize()
 }
 
 func (c *Camera) RightWardsVector() mgl32.Vec3 {
