@@ -61,13 +61,13 @@ func (c *Camera) SetPosition(x, y, z float32) {
 }
 
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
-/*
+
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
 
 	return translation.Mul4(rotation)
-	*/
-	return c.orientation.Mat4()
+	
+	//return c.orientation.Mat4()
 }
 
 func (c *Camera) Reset() {
