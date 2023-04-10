@@ -22,7 +22,7 @@ func handleMouseButton(w *glfw.Window, button glfw.MouseButton, action glfw.Acti
 func handleMouseWheel(w *glfw.Window, xoff float64, yoff float64) {
 	log.Printf("Got mouse wheel %v,%v", xoff, yoff)
 	MouseWheelValue += float32(yoff)
-	
+
 	//handleKey(w, key, scancode, action, mods)
 }
 
@@ -65,6 +65,12 @@ func handleKey(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 			// space bar
 			case 32:
 				camera.Move(5,0.1)
+				// R
+			case 82:
+				camera.Move(6,0.1)
+			// F
+			case 70:
+				camera.Move(7,0.1)
 
 				
 

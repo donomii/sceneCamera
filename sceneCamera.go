@@ -3,32 +3,33 @@ package sceneCamera
 //This is a camera library for 3D graphics. package cameralib
 
 import (
-	
 	"fmt"
-	"math"
 	"github.com/go-gl/mathgl/mgl32"
+	"log"
+	"math"
 )
 
 type Camera struct {
-	Position          mgl32.Vec3  //The position of the camera in world space
-	Target            mgl32.Vec3  //The target of the camera in world space.  Note: not the focal point
-	Up                mgl32.Vec3  //The up vector of the camera
-	Orientation       mgl32.Quat  //The orientation of the camera, quaternion
-	Mode              int	 //The mode of the camera.  1 - Museum mode, 2 - FPS mode, 3 - RTS mode
-	GroundPlaneNormal mgl32.Vec3	 //The normal of the ground plane
-	IPD 			 float32	 //The inter-pupillary distance, in world space
-	FocalLength		 float32 	 //The focal length of the camera, in world space
-	Near 			 float32	 //The near clipping plane
-	Far 			 float32	 //The far clipping plane
-	Screenheight 	float32	 //The height of the screen, in pixels
-	Screenwidth 	float32	 //The width of the screen, in pixels
-	Aperture 		float32	 //The aperture of the camera, in world space
-	FOV 			 float32	 //The field of view of the camera, in degrees
-	
+	Position          mgl32.Vec3 //The position of the camera in world space
+	Target            mgl32.Vec3 //The target of the camera in world space.  Note: not the focal point
+	Up                mgl32.Vec3 //The up vector of the camera
+	Orientation       mgl32.Quat //The orientation of the camera, quaternion
+	Mode              int        //The mode of the camera.  1 - Museum mode, 2 - FPS mode, 3 - RTS mode
+	GroundPlaneNormal mgl32.Vec3 //The normal of the ground plane
+	IPD               float32    //The inter-pupillary distance, in world space
+	FocalLength       float32    //The focal length of the camera, in world space
+	Near              float32    //The near clipping plane
+	Far               float32    //The far clipping plane
+	Screenheight      float32    //The height of the screen, in pixels
+	Screenwidth       float32    //The width of the screen, in pixels
+	Aperture          float32    //The aperture of the camera, in world space
+	FOV               float32    //The field of view of the camera, in degrees
+
 }
 
 var PI = float32(3.1415927)
-//Choose the mode of the camera.
+
+// Choose the mode of the camera.
 // 1 - Museum mode
 // 2 - FPS mode
 // 3 - RTS mode
@@ -41,16 +42,16 @@ func New(mode int) *Camera {
 		Orientation:       mgl32.QuatIdent(),
 		Mode:              mode,
 		GroundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
-		FocalLength: 5.0,
-		Near:  0.1,
-		Far: 30.0,
-		FOV : PI/2.0,
-		IPD: 2.0,
-		Screenheight: 1080.0,
-		Screenwidth: 1920.0,
+		FocalLength:       5.0,
+		Near:              0.1,
+		Far:               30.0,
+		FOV:               PI / 2.0,
+		IPD:               2.0,
+		Screenheight:      1080.0,
+		Screenwidth:       1920.0,
 	}
 	if mode == 3 {
-		c.Up = mgl32.Vec3{0.0, 0.0, 1.0}
+		c.Up = c.GroundPlaneNormal
 		c.Position = mgl32.Vec3{5.0, 5.0, 5.0}
 		//In RTS mode, set the initial target to a point on the ground plane
 		forward := c.ForwardsVector()
@@ -65,7 +66,7 @@ func (c *Camera) SetUp(x, y, z float32) {
 	c.Up = mgl32.Vec3{x, y, z}
 }
 
-//Choose the mode of the camera.
+// Choose the mode of the camera.
 // 1 - Museum mode
 // 2 - FPS mode
 // 3 - RTS mode
@@ -73,12 +74,12 @@ func (c *Camera) SetMode(mode int) {
 	c.Mode = mode
 }
 
-//Set the normal of the ground plane.  This is used in RTS mode, and ignored in other modes.
+// Set the normal of the ground plane.  This is used in RTS mode, and ignored in other modes.
 func (c *Camera) SetGroundPlaneNormal(x, y, z float32) {
 	c.GroundPlaneNormal = mgl32.Vec3{x, y, z}
 }
 
-//Print some information about the camera to stdout
+// Print some information about the camera to stdout
 func (c *Camera) Dump() {
 	fmt.Println("Camera position:", c.Position)
 	fmt.Println("Camera target:", c.Target)
@@ -95,12 +96,12 @@ func (c *Camera) LookAt(x, y, z float32) {
 	c.Orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.Position, c.Target, c.Up))
 }
 
-//Returns the position of the camera in world space
+// Returns the position of the camera in world space
 func (c *Camera) WorldPosition() (float32, float32, float32) {
 	return c.Position.X(), c.Position.Y(), c.Position.Z()
 }
 
-//Returns the rotation matrix of the camera.  (the rotation part of the view matrix)
+// Returns the rotation matrix of the camera.  (the rotation part of the view matrix)
 func (c *Camera) RotationMatrix() mgl32.Mat4 {
 	return c.Orientation.Mat4()
 }
@@ -111,12 +112,12 @@ func (c *Camera) EulerMatrix() mgl32.Mat4 {
 }
 */
 
-//Teleport to a position in world space
+// Teleport to a position in world space
 func (c *Camera) SetPosition(x, y, z float32) {
 	c.Position = mgl32.Vec3{x, y, z}
 }
 
-//Set the inter-pupillary distance for 3D displays (in world coordinates)
+// Set the inter-pupillary distance for 3D displays (in world coordinates)
 func (c *Camera) SetIPD(ipd float32) {
 	c.IPD = ipd
 }
@@ -125,7 +126,7 @@ func (c *Camera) SetFocalLength(focalLength float32) {
 	c.FocalLength = focalLength
 }
 
-//Return the ViewMatrix for the camera.  This is the matrix that transforms world space to camera space.  It contains both the rotation and translation of the camera.  It can be passed directly to OpenGL as the ViewMatrix, and used in GLSL shaders as the ViewMatrix.
+// Return the ViewMatrix for the camera.  This is the matrix that transforms world space to camera space.  It contains both the rotation and translation of the camera.  It can be passed directly to OpenGL as the ViewMatrix, and used in GLSL shaders as the ViewMatrix.
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	rotation := c.Orientation.Mat4()
 	translation := mgl32.Translate3D(-c.Position.X(), -c.Position.Y(), -c.Position.Z())
@@ -134,19 +135,20 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 
 // Support 3D displays, by returning the view matrix for the left eye
 func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
-	
+
 	rightVec := c.RightWardsVector()
-	eyepos := c.Position.Sub(rightVec.Mul(c.IPD/2))
+	eyepos := c.Position.Sub(rightVec.Mul(c.IPD / 2))
 	rotation := c.Orientation.Mat4()
-	
+
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)
 }
+
 // Support 3D displays, by returning the view matrix for the left eye
 func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
-	
+
 	rightVec := c.RightWardsVector()
-	eyepos := c.Position.Add(rightVec.Mul(c.IPD/2))
+	eyepos := c.Position.Add(rightVec.Mul(c.IPD / 2))
 	rotation := c.Orientation.Mat4()
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)
@@ -172,11 +174,11 @@ func (c *Camera) RightEyeFrustrum() mgl32.Mat4 {
 	if c.FOV == 0 {
 		panic("FOV is zero")
 	}
-	aspect_ratio  := c.Screenwidth / c.Screenheight/2
-	frustumshift := (c.IPD/2)*c.Near/c.Far
+	aspect_ratio := c.Screenwidth / c.Screenheight / 2
+	frustumshift := (c.IPD / 2) * c.Near / c.Far
 	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
-	right := aspect_ratio*top+frustumshift
-	left := -aspect_ratio*top+frustumshift
+	right := aspect_ratio*top + frustumshift
+	left := -aspect_ratio*top + frustumshift
 	bottom := -top
 	frustrum := mgl32.Frustum(left, right, bottom, top, c.Near, c.Far)
 	return frustrum
@@ -202,19 +204,17 @@ func (c *Camera) LeftEyeFrustrum() mgl32.Mat4 {
 	if c.FOV == 0 {
 		panic("FOV is zero")
 	}
-	aspect_ratio  := c.Screenwidth / c.Screenheight/2
-	frustumshift := (c.IPD/2)*c.Near/c.Far
+	aspect_ratio := c.Screenwidth / c.Screenheight / 2
+	frustumshift := (c.IPD / 2) * c.Near / c.Far
 	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
-	right := aspect_ratio*top-frustumshift
-	left := -aspect_ratio*top-frustumshift
+	right := aspect_ratio*top - frustumshift
+	left := -aspect_ratio*top - frustumshift
 	bottom := -top
 	frustrum := mgl32.Frustum(left, right, bottom, top, c.Near, c.Far)
 	return frustrum
 }
 
-
-
-//Reset the camera to its initial position
+// Reset the camera to its initial position
 func (c *Camera) Reset() {
 	c.Position = mgl32.Vec3{0.0, 0.0, 5.0}
 	c.Target = mgl32.Vec3{0.0, 0.0, 0.0}
@@ -248,12 +248,12 @@ func (c *Camera) Move(direction int, amount float32) {
 
 }
 
-//Move the camera through world space
+// Move the camera through world space
 func (c *Camera) Translate(x, y, z float32) {
 	c.Position = c.Position.Add(mgl32.Vec3{x, y, z})
 }
 
-//Rotate the camera, probably not around the axes that you want
+// Rotate the camera, probably not around the axes that you want
 func (c *Camera) Rotate(x, y, z float32) {
 	quatX := mgl32.QuatRotate(x, mgl32.Vec3{1, 0, 0})
 	quatY := mgl32.QuatRotate(y, mgl32.Vec3{0, 1, 0})
@@ -396,7 +396,7 @@ func (c *Camera) moveFPSMode(direction int, amount float32) {
 	c.Orientation = mgl32.Mat4ToQuat(mgl32.LookAtV(c.Position, c.Target, c.Up))
 }
 
-//Project a vector onto a plane, given the normal of the plane, where v1 is the normal of the plane and v2 is the vector to be projected
+// Project a vector onto a plane, given the normal of the plane, where v1 is the normal of the plane and v2 is the vector to be projected
 func ProjectPlane(v1, v2 mgl32.Vec3) mgl32.Vec3 {
 	//Project v2 onto v1
 	//v1 is the normal of the plane
@@ -406,15 +406,16 @@ func ProjectPlane(v1, v2 mgl32.Vec3) mgl32.Vec3 {
 	d := v1.Dot(v2)
 	return v2.Sub(v1.Mul(d))
 }
-//Find the point on the plane that the ray intercepts
-	//groundNormal is the normal of the plane
-	//rayOrigin is the origin of the ray
-	//rayDirection is the direction of the ray
-	//Returns the point on the plane that the ray intercepts
-	//
-	//The plane is assumed to pass through the origin
+
+// Find the point on the plane that the ray intercepts
+// groundNormal is the normal of the plane
+// rayOrigin is the origin of the ray
+// rayDirection is the direction of the ray
+// Returns the point on the plane that the ray intercepts
+//
+// The plane is assumed to pass through the origin
 func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
-	
+
 	groundNormal = groundNormal.Normalize()
 	rayDirection = rayDirection.Normalize()
 	d := groundNormal.Dot(rayDirection)
@@ -426,7 +427,7 @@ func PlaneIntercept(groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3
 	return rayOrigin.Add(rayDirection.Mul(t))
 }
 
-//Find the point on the plane that the ray intercepts
+// Find the point on the plane that the ray intercepts
 // as for PlaneIntercept, but the plane is not assumed to pass through the origin
 func PlaneIntercept2(groundOrigin, groundNormal, rayOrigin, rayDirection mgl32.Vec3) mgl32.Vec3 {
 	//Find the point on the plane that the ray intercepts
@@ -486,14 +487,15 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.Target.X(), c.Target.Y(), c.Target.Z())
 		c.Target = c.Position.Add(forward)
 	case 8: // Orbit left
+		log.Printf("Rotating %v around %v by %v", c.Position, c.GroundPlaneNormal, amount)
 		//Rotate the camera around the target by the specified amount
-		//FIXME rotate around the ground plane normal, not the axis
 		new_relative_position := mgl32.HomogRotate3D(amount, c.GroundPlaneNormal).Mul4x1(relativePosition.Vec4(0))
 		fmt.Printf("new_relative_position: %v\n", new_relative_position)
 		c.Position = c.Target.Add(new_relative_position.Vec3())
 		fmt.Printf("c.position: %v\n", c.Position)
 		c.LookAt(c.Target.X(), c.Target.Y(), c.Target.Z())
 	case 9: // Orbit right
+		log.Printf("Rotating %v around %v by %v", c.Position, c.GroundPlaneNormal, amount)
 		//Rotate the camera around the target by the specified amount
 		//FIXME rotate around the ground plane normal, not the axis
 		new_relative_position := mgl32.HomogRotate3D(-amount, c.GroundPlaneNormal).Mul4x1(relativePosition.Vec4(0))
@@ -501,13 +503,15 @@ func (c *Camera) moveRTSMode(direction int, amount float32) {
 		c.LookAt(c.Target.X(), c.Target.Y(), c.Target.Z())
 
 	case 6: //Orbit up
+		log.Printf("Rotating %v around %v by %v", c.Position, groundRightVec, amount)
 		//FIXME rotate around the camera's right vector, not the axis
-		new_relative_position := mgl32.HomogRotate3D(-amount, c.RightWardsVector()).Mul4x1(relativePosition.Vec4(0))
+		new_relative_position := mgl32.HomogRotate3D(-amount, groundRightVec).Mul4x1(relativePosition.Vec4(0))
 		c.Position = c.Target.Add(new_relative_position.Vec3())
 		c.LookAt(c.Target.X(), c.Target.Y(), c.Target.Z())
 	case 7: // Orbit down
+		log.Printf("Rotating %v around %v by %v", c.Position, groundRightVec, amount)
 		//FIXME rotate around the camera's right vector, not the axis
-		new_relative_position := mgl32.HomogRotate3D(amount, c.RightWardsVector()).Mul4x1(relativePosition.Vec4(0))
+		new_relative_position := mgl32.HomogRotate3D(amount, groundRightVec).Mul4x1(relativePosition.Vec4(0))
 		c.Position = c.Target.Add(new_relative_position.Vec3())
 		c.LookAt(c.Target.X(), c.Target.Y(), c.Target.Z())
 	}

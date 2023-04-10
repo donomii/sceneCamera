@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 
-	
 	Cameras "github.com/donomii/sceneCamera"
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -34,9 +33,12 @@ import (
 var logo_bytes []byte
 
 var MainWin *glfw.Window
+var WantSBS bool
 
 // Arrange that main.main runs on main thread.
 func init() {
+	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
+	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
 }
@@ -86,13 +88,13 @@ func main() {
 
 	camera = Cameras.New(3)
 	camera.SetPosition(10, 10, 10)
-	camera.SetUp(0, 0, 1)
+	//camera.SetUp(0, 0, 1)
 	camera.SetIPD(1.0)
-	PI :=3.1415927
-	camera.FOV=float32(PI/4)
-	camera.Near=1.0
-	camera.Far=100
-	camera.IPD=1.0
+	PI := 3.1415927
+	camera.FOV = float32(PI / 4)
+	camera.Near = 1.0
+	camera.Far = 100
+	camera.IPD = 1.0
 
 	currentDir, _ := os.Getwd()
 	for _, commandStr := range launchList {
@@ -260,8 +262,12 @@ func gfxMain(win *glfw.Window, state *State) {
 
 		viewMatrix := camera.ViewMatrix()
 
-		camera.Dump()
-		RenderStereoFrame(state, viewMatrix)
+		if WantSBS {
+			RenderStereoFrame(state, viewMatrix)
+		} else {
+			projectionMatrix := mgl32.Perspective(camera.FOV, float32(camera.Screenwidth)/float32(camera.Screenheight), camera.Near, camera.Far)
+			RenderFrame(state, viewMatrix, projectionMatrix)
+		}
 		win.SwapBuffers()
 
 	}
@@ -275,7 +281,7 @@ func RenderStereoFrame(state *State, discard mgl32.Mat4) {
 	camera.SetIPD(MouseWheelValue)
 	//get window width and height
 	width, height := MainWin.GetSize()
-	camera.Screenwidth = float32(width)/2
+	camera.Screenwidth = float32(width) / 2
 	camera.Screenheight = float32(height)
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
@@ -306,9 +312,7 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 
 			model := mgl32.Ident4()
 			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
-			//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
-
-			// Render
+		
 
 			gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
 
