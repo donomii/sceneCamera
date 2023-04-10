@@ -86,7 +86,7 @@ func main() {
 	camera = Cameras.New(3)
 	camera.SetPosition(10, 10, 10)
 	camera.SetUp(0, 0, 1)
-	camera.SetIPD(20.0)
+	camera.SetIPD(1.0)
 	currentDir, _ := os.Getwd()
 	for _, commandStr := range launchList {
 		log.Printf("Launching %v", commandStr)
@@ -135,6 +135,8 @@ func main() {
 
 	win.SetCursorPosCallback(handleMouseMove)
 
+	win.SetScrollCallback(handleMouseWheel)
+
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
@@ -156,7 +158,7 @@ func main() {
 	gl.UseProgram(state.Program)
 
 	//Set a default projection matrix
-	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(winWidth)/float32(winHeight), 0.001, 1000.0)
+	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(winWidth)/float32(winHeight), 0.1, 100.0)
 	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
@@ -260,33 +262,39 @@ func gfxMain(win *glfw.Window, state *State) {
 }
 
 func RenderStereoFrame(state *State, discard mgl32.Mat4) {
+	camera.SetIPD(MouseWheelValue)
 	//get window width and height
 	width, height := MainWin.GetSize()
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
-	viewMatrix := camera.LeftEyeViewMatrix()
-	fmt.Println("Left Eye View Matrix", viewMatrix)
-	RenderFrame(state, viewMatrix)
+	LeftviewMatrix := camera.LeftEyeViewMatrix()
+	fmt.Println("Left Eye View Matrix", LeftviewMatrix)
+	LeftEyeFrustrum := mgl32.Perspective(mgl32.DegToRad(45.0), float32(winWidth)/float32(winHeight), 0.1, 100.0)
+	RenderFrame(state, LeftviewMatrix, LeftEyeFrustrum)
 	//Set viewport to right half of window
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
-	RenderFrame(state, viewMatrix)
-	viewMatrix = camera.RightEyeViewMatrix()
+	viewMatrix := camera.RightEyeViewMatrix()
 	fmt.Println("Right Eye View Matrix", viewMatrix)
+	RightProjectionMatrix := camera.RightEyeFrustrum()
+	RenderFrame(state, viewMatrix, RightProjectionMatrix)
 	//Set viewport to whole window
 	gl.Viewport(0, 0, int32(width), int32(height))
 }
 
-func RenderFrame(state *State, viewMatrix mgl32.Mat4) {
+func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat4) {
 	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
 	gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
+
+	//Set a default projection matrix
+	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
+	gl.UniformMatrix4fv(projectionUniform, 1, false, &projectionMatrix[0])
+
 	for i := -10; i < 11; i++ {
 		for j := -10; j < 11; j++ {
 
 			model := mgl32.Ident4()
 			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
 			//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
-
-		
 
 			// Render
 

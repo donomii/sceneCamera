@@ -104,7 +104,7 @@ func TestMove(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := New(tc.mode)
 			c.Move(tc.direction, tc.amount)
-			pos := mgl32.Vec3{c.position.X(), c.position.Y(), c.position.Z()}
+			pos := mgl32.Vec3{c.Position.X(), c.Position.Y(), c.Position.Z()}
 
 			if !pos.ApproxEqualThreshold(tc.expected, epsilon) {
 				t.Errorf("Expected position %v, got %v", tc.expected, pos)

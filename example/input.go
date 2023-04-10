@@ -7,6 +7,7 @@ import (
 )
 
 var oldXpos float64
+var MouseWheelValue float32
 
 func handleMouseMove(w *glfw.Window, xpos float64, ypos float64) {
 	//log.Printf("Mouse moved: %v,%v", xpos, ypos)
@@ -15,6 +16,12 @@ func handleMouseMove(w *glfw.Window, xpos float64, ypos float64) {
 }
 func handleMouseButton(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	log.Printf("Got mouse button %v,%v,%v", button, mod, action)
+	//handleKey(w, key, scancode, action, mods)
+}
+
+func handleMouseWheel(w *glfw.Window, xoff float64, yoff float64) {
+	log.Printf("Got mouse wheel %v,%v", xoff, yoff)
+	MouseWheelValue += float32(yoff)
 	//handleKey(w, key, scancode, action, mods)
 }
 
