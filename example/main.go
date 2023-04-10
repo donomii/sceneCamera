@@ -91,6 +91,7 @@ func main() {
 	camera.FOV=float32(PI/2)
 	camera.Near=0.1
 	camera.Far=50
+	camera.IPD=1.0
 
 	currentDir, _ := os.Getwd()
 	for _, commandStr := range launchList {
