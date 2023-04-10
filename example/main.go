@@ -88,9 +88,9 @@ func main() {
 	camera.SetUp(0, 0, 1)
 	camera.SetIPD(1.0)
 	PI :=3.1415927
-	camera.FOV=float32(PI/2)
+	camera.FOV=float32(PI/4)
 	camera.Near=0.1
-	camera.Far=50
+	camera.Far=100
 	camera.IPD=1.0
 
 	currentDir, _ := os.Getwd()
@@ -268,10 +268,10 @@ func gfxMain(win *glfw.Window, state *State) {
 }
 
 func RenderStereoFrame(state *State, discard mgl32.Mat4) {
-	camera.SetIPD(MouseWheelValue)
+	camera.SetIPD(MouseWheelValue+1.0)
 	//get window width and height
 	width, height := MainWin.GetSize()
-	camera.Screenwidth = float32(width)
+	camera.Screenwidth = float32(width)/2
 	camera.Screenheight = float32(height)
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
