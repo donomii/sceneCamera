@@ -86,7 +86,7 @@ func main() {
 	camera = Cameras.New(3)
 	camera.SetPosition(10, 10, 10)
 	camera.SetUp(0, 0, 1)
-	camera.SetIpd(20.0)
+	camera.SetIPD(20.0)
 	currentDir, _ := os.Getwd()
 	for _, commandStr := range launchList {
 		log.Printf("Launching %v", commandStr)
