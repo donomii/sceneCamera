@@ -98,16 +98,28 @@ func (c *Camera) SetPosition(x, y, z float32) {
 
 //Return the ViewMatrix for the camera.  This is the matrix that transforms world space to camera space.  It contains both the rotation and translation of the camera.  It can be passed directly to OpenGL as the ViewMatrix, and used in GLSL shaders as the ViewMatrix.
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
-
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-c.position.X(), -c.position.Y(), -c.position.Z())
-
-	//if c.mode == 1 {
-	//	return translation.Mul4(rotation)
-	//}
 	return rotation.Mul4(translation)
+}
 
-	//return c.orientation.Mat4()
+// Support 3D displays, by returning the view matrix for the left eye
+func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
+	ipd := float32(1.0)
+	rightVec := c.RightWardsVector()
+	eyepos := c.position.Sub(rightVec.Mul(ipd))
+	rotation := c.orientation.Mat4()
+	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
+	return rotation.Mul4(translation)
+}
+// Support 3D displays, by returning the view matrix for the left eye
+func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
+	ipd := float32(1.0)
+	rightVec := c.RightWardsVector()
+	eyepos := c.position.Add(rightVec.Mul(ipd))
+	rotation := c.orientation.Mat4()
+	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
+	return rotation.Mul4(translation)
 }
 
 //Reset the camera to its initial position

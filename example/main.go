@@ -22,15 +22,17 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/donomii/sceneCamera"
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/donomii/sceneCamera"
 
 	_ "embed"
 )
 
 //go:embed logo.png
 var logo_bytes []byte
+
+var MainWin *glfw.Window
 
 // Arrange that main.main runs on main thread.
 func init() {
@@ -56,7 +58,6 @@ var winWidth = 180
 var winHeight = 180
 var lasttime float64
 
-
 var launchShellList arrayFlags
 var launchList arrayFlags
 var runningProcs []context.CancelFunc
@@ -66,7 +67,9 @@ func drainChannel(ch chan []byte) {
 		<-ch
 	}
 }
+
 var camera *Cameras.Camera
+
 func main() {
 	flag.Var(&launchShellList, "launchShell", "Run shell command at start.  May be repeated to launch multiple commands.")
 	flag.Var(&launchList, "launch", "Command line to start an app.  May be repeated to launch multiple apps.")
@@ -81,8 +84,8 @@ func main() {
 	}
 
 	camera = Cameras.New(3)
-	camera.SetPosition(10,10,10)
-	camera.SetUp(0,0,1)
+	camera.SetPosition(10, 10, 10)
+	camera.SetUp(0, 0, 1)
 	currentDir, _ := os.Getwd()
 	for _, commandStr := range launchList {
 		log.Printf("Launching %v", commandStr)
@@ -113,6 +116,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	MainWin = win
 	go func() {
 		time.Sleep(5 * time.Second)
 		win.Iconify()
@@ -243,32 +248,48 @@ func gfxMain(win *glfw.Window, state *State) {
 		angle += elapsed
 		state.Angle = angle
 
-		for i:=-10; i<11; i++ {
-			for j:=-10; j<11; j++ {
+		viewMatrix := camera.ViewMatrix()
 
-		model := mgl32.Ident4()
-		model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2,0))
-		//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
-
-			//Setup the camera
-			
-			//camera.LookAt(0,0,0)
-	viewMatrix := camera.ViewMatrix()
-
-	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
-
-		// Render
-
-		gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
-
-		gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
-
-			}}
+		RenderSteroFrame(state, viewMatrix)
 		win.SwapBuffers()
 
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
+}
+
+func RenderStereoFrame(state *State, discard mgl32.Mat4) {
+	//get window width and height
+	width, height := MainWin.GetSize()
+	// Set viewport to left half of window
+	gl.Viewport(0, 0, int32(width/2), int32(height))
+	viewMatrix := camera.LeftEyeViewMatrix()
+	//Set viewport to right half of window
+	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
+	RenderFrame(state, viewMatrix)
+	viewMatrix = camera.RightEyeViewMatrix()
+	//Set viewport to whole window
+	gl.Viewport(0, 0, int32(width), int32(height))
+}
+
+func RenderFrame(state *State, viewMatrix mgl32.Mat4) {
+	for i := -10; i < 11; i++ {
+		for j := -10; j < 11; j++ {
+
+			model := mgl32.Ident4()
+			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
+			//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
+
+			cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
+			gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
+
+			// Render
+
+			gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
+
+			gl.DrawArrays(gl.TRIANGLES, 0, 6*2*3)
+		}
+	}
+
 }
 
 func checkGlError() {
