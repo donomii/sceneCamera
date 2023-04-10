@@ -43,9 +43,11 @@ func New(mode int) *Camera {
 		GroundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
 		FocalLength: 5.0,
 		Near:  0.1,
-		Far: 100.0,
+		Far: 30.0,
 		FOV : PI/2.0,
 		IPD: 2.0,
+		Screenheight: 1080.0,
+		Screenwidth: 1920.0,
 	}
 	if mode == 3 {
 		c.Up = mgl32.Vec3{0.0, 0.0, 1.0}
@@ -153,7 +155,26 @@ func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
 	return rotation.Mul4(translation)
 }
 
+// Calculate the frustrum matrix for the right eye
 func (c *Camera) RightEyeFrustrum() mgl32.Mat4 {
+	if c.Screenheight == 0 {
+		panic("Screen height is zero")
+	}
+	if c.Screenwidth == 0 {
+		panic("Screen width is zero")
+	}
+	if c.IPD == 0 {
+		panic("IPD is zero")
+	}
+	if c.Near == 0 {
+		panic("Near is zero")
+	}
+	if c.Far == 0 {
+		panic("Far is zero")
+	}
+	if c.FOV == 0 {
+		panic("FOV is zero")
+	}
 	aspect_ratio  := c.Screenwidth / c.Screenheight
 	frustumshift := (c.IPD/2)*c.Near/c.Far
 	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
