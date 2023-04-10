@@ -14,6 +14,7 @@ type Camera struct {
 	orientation       mgl32.Quat
 	mode              int
 	groundPlaneNormal mgl32.Vec3
+	ipd 			 float32
 }
 //Choose the mode of the camera.
 // 1 - Museum mode
@@ -28,6 +29,7 @@ func New(mode int) *Camera {
 		orientation:       mgl32.QuatIdent(),
 		mode:              mode,
 		groundPlaneNormal: mgl32.Vec3{0.0, 0.0, 1.0},
+		ipd: 2.0,
 	}
 	if mode == 3 {
 		c.up = mgl32.Vec3{0.0, 0.0, 1.0}
@@ -105,18 +107,18 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 
 // Support 3D displays, by returning the view matrix for the left eye
 func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
-	ipd := float32(1.0)
+	
 	rightVec := c.RightWardsVector()
-	eyepos := c.position.Sub(rightVec.Mul(ipd))
+	eyepos := c.position.Sub(rightVec.Mul(c.ipd/2))
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)
 }
 // Support 3D displays, by returning the view matrix for the left eye
 func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
-	ipd := float32(1.0)
+	
 	rightVec := c.RightWardsVector()
-	eyepos := c.position.Add(rightVec.Mul(ipd))
+	eyepos := c.position.Add(rightVec.Mul(c.ipd/2))
 	rotation := c.orientation.Mat4()
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)

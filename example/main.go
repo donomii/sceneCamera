@@ -250,7 +250,7 @@ func gfxMain(win *glfw.Window, state *State) {
 
 		viewMatrix := camera.ViewMatrix()
 
-		RenderSteroFrame(state, viewMatrix)
+		RenderStereoFrame(state, viewMatrix)
 		win.SwapBuffers()
 
 	}
@@ -263,6 +263,7 @@ func RenderStereoFrame(state *State, discard mgl32.Mat4) {
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
 	viewMatrix := camera.LeftEyeViewMatrix()
+	RenderFrame(state, viewMatrix)
 	//Set viewport to right half of window
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
 	RenderFrame(state, viewMatrix)
