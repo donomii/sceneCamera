@@ -119,6 +119,7 @@ func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
 	log.Printf("Left eye position: %v", eyepos)
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
+	log.Printf("Left eye translation matrix: %v", translation)
 	return rotation.Mul4(translation)
 }
 // Support 3D displays, by returning the view matrix for the left eye
@@ -129,6 +130,7 @@ func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
 	log.Printf("Right eye position: %v", eyepos)
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
+	log.Printf("Right eye translation matrix: %v", translation)
 	return rotation.Mul4(translation)
 }
 
