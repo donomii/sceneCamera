@@ -89,7 +89,7 @@ func main() {
 	camera.SetIPD(1.0)
 	PI :=3.1415927
 	camera.FOV=float32(PI/4)
-	camera.Near=0.1
+	camera.Near=1.0
 	camera.Far=100
 	camera.IPD=1.0
 
