@@ -98,6 +98,11 @@ func (c *Camera) SetPosition(x, y, z float32) {
 	c.position = mgl32.Vec3{x, y, z}
 }
 
+//Set the inter-pupillary distance for 3D displays (in world coordinates)
+func (c *Camera) SetIPD(ipd float32) {
+	c.ipd = ipd
+}
+
 //Return the ViewMatrix for the camera.  This is the matrix that transforms world space to camera space.  It contains both the rotation and translation of the camera.  It can be passed directly to OpenGL as the ViewMatrix, and used in GLSL shaders as the ViewMatrix.
 func (c *Camera) ViewMatrix() mgl32.Mat4 {
 	rotation := c.orientation.Mat4()
