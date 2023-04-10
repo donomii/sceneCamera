@@ -1,4 +1,4 @@
-package Cameras
+package sceneCamera
 
 //This is a camera library for 3D graphics. package cameralib
 
