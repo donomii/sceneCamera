@@ -157,8 +157,8 @@ func (c *Camera) RightEyeFrustrum() mgl32.Mat4 {
 	aspect_ratio  := c.Screenwidth / c.Screenheight
 	frustumshift := (c.IPD/2)*c.Near/c.Far
 	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
-	right := aspect_ratio*top-frustumshift
-	left := aspect_ratio*top+frustumshift
+	right := aspect_ratio*top+frustumshift
+	left := aspect_ratio*top-frustumshift
 	bottom := -top
 	frustrum := mgl32.Frustum(left, right, bottom, top, c.Near, c.Far)
 	return frustrum
