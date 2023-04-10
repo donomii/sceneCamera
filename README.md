@@ -8,11 +8,11 @@ Easy 3D camera management
 Description
 ===========
 
-SceneCamera manages the camera view for 3D applications.  It provides the V in the GL trinity MVP.  
+SceneCamera manages the camera view for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
 
 It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
 
-It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the viewmatrix into your graphics library's matrix format.
+It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the matrices into your graphics library's matrix format.
 
 ### Museum mode
 Museum mode is a simple camera that orbits around a point, and can zoom in and out.  Draw your object at the origin, and the camera will orbit around it.  It is useful for inspecting 3D models from all angles.
@@ -25,13 +25,59 @@ The classic game mode.  Move forwards, backwards, strafe and turn.  It can also 
 
 The camera floats over a ground plane.  Forwards, backwards and strafe slide the camera along the ground plane.  It can also spin around a point on the the map, using the pitch and yaw.
 
+## SBS (Side by Side) rendering
+
+SceneCamera provides the correct matrices for rendering in SBS (or twin display) mode.  Rather than taking control of the render like many graphics libraries, sceneCamera just hands you the matrices so that you can use them in your own render.  See the example directory for more details.
+
+a quick summary:
+```
+func RenderStereoFrame(state *State) {
+    // Set the inter-pupilary distance.  Not critical, but the wrong value will make you feel sick.
+	camera.SetIPD(2.0)
+
+	//get window width and height
+	width, height := MainWin.GetSize()
+	camera.Screenwidth = float32(width)/2
+	camera.Screenheight = float32(height)
+
+
+    //Get the view matrix for the left eye
+	LeftviewMatrix := camera.LeftEyeViewMatrix()
+
+    //Get the projection matrix for the left eye
+	LeftEyeFrustrum := camera.LeftEyeFrustrum()
+
+	// Set the viewport to left half of the window
+	gl.Viewport(0, 0, int32(width/2), int32(height))
+
+    //Render the scene to the left eye
+	RenderFrame(state, LeftviewMatrix, LeftEyeFrustrum)
+
+
+
+    //Get the matrices for the right eye
+	viewMatrix := camera.RightEyeViewMatrix()
+	RightProjectionMatrix := camera.RightEyeFrustrum()
+
+    //Set the viewport to right half of the window
+	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
+
+    Draw the scene to the right eye display
+	RenderFrame(state, viewMatrix, RightProjectionMatrix)
+
+
+	//Set viewport to whole window
+	gl.Viewport(0, 0, int32(width), int32(height))
+}
+```
+
 ## Default position
 
 The camera starts at z=5 (0,0,5), looking at the origin(0,0,0).  Positive Y is up (0,1,0).
 
 In RTS mode, the camera starts at (10,10,10), looking at the origin(0,0,0).  Positive **Z** is up (0,0,1).  The ground plane is at z=0, covering the x and y axes.  i.e. the ground normal vector is (0,0,1).
 
-All these settings can be changed by calling the appropriate method.
+All these settings can be changed by setting the appropriate field.
 
 ## Typical use
 

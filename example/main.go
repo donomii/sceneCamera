@@ -22,7 +22,8 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/donomii/sceneCamera"
+	
+	Cameras "github.com/donomii/sceneCamera"
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 
@@ -268,7 +269,10 @@ func gfxMain(win *glfw.Window, state *State) {
 }
 
 func RenderStereoFrame(state *State, discard mgl32.Mat4) {
-	camera.SetIPD(MouseWheelValue+1.0)
+	if MouseWheelValue == 0 {
+		MouseWheelValue = 0.01
+	}
+	camera.SetIPD(MouseWheelValue)
 	//get window width and height
 	width, height := MainWin.GetSize()
 	camera.Screenwidth = float32(width)/2
@@ -277,7 +281,7 @@ func RenderStereoFrame(state *State, discard mgl32.Mat4) {
 	gl.Viewport(0, 0, int32(width/2), int32(height))
 	LeftviewMatrix := camera.LeftEyeViewMatrix()
 	fmt.Println("Left Eye View Matrix", LeftviewMatrix)
-	LeftEyeFrustrum := mgl32.Perspective(mgl32.DegToRad(45.0), float32(winWidth)/float32(winHeight), 0.1, 100.0)
+	LeftEyeFrustrum := camera.LeftEyeFrustrum()
 	RenderFrame(state, LeftviewMatrix, LeftEyeFrustrum)
 	//Set viewport to right half of window
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
