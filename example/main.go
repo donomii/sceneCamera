@@ -251,6 +251,7 @@ func gfxMain(win *glfw.Window, state *State) {
 
 		viewMatrix := camera.ViewMatrix()
 
+		camera.Dump()
 		RenderStereoFrame(state, viewMatrix)
 		win.SwapBuffers()
 
@@ -264,16 +265,20 @@ func RenderStereoFrame(state *State, discard mgl32.Mat4) {
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
 	viewMatrix := camera.LeftEyeViewMatrix()
+	fmt.Println("Left Eye View Matrix", viewMatrix)
 	RenderFrame(state, viewMatrix)
 	//Set viewport to right half of window
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
 	RenderFrame(state, viewMatrix)
 	viewMatrix = camera.RightEyeViewMatrix()
+	fmt.Println("Right Eye View Matrix", viewMatrix)
 	//Set viewport to whole window
 	gl.Viewport(0, 0, int32(width), int32(height))
 }
 
 func RenderFrame(state *State, viewMatrix mgl32.Mat4) {
+	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
 	for i := -10; i < 11; i++ {
 		for j := -10; j < 11; j++ {
 
@@ -281,8 +286,7 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4) {
 			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
 			//model := mgl32.HomogRotate3D(float32(angle+rotX), mgl32.Vec3{0, 1, 0})
 
-			cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
-			gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
+		
 
 			// Render
 

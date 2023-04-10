@@ -3,6 +3,7 @@ package Cameras
 //This is a camera library for 3D graphics. package cameralib
 
 import (
+	"log"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -116,6 +117,7 @@ func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
 	rightVec := c.RightWardsVector()
 	eyepos := c.position.Sub(rightVec.Mul(c.ipd/2))
 	rotation := c.orientation.Mat4()
+	log.Printf("Left eye position: %v", eyepos)
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)
 }
@@ -125,6 +127,7 @@ func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
 	rightVec := c.RightWardsVector()
 	eyepos := c.position.Add(rightVec.Mul(c.ipd/2))
 	rotation := c.orientation.Mat4()
+	log.Printf("Right eye position: %v", eyepos)
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
 	return rotation.Mul4(translation)
 }
