@@ -3,7 +3,7 @@ package Cameras
 //This is a camera library for 3D graphics. package cameralib
 
 import (
-	"log"
+	
 	"fmt"
 	"math"
 	"github.com/go-gl/mathgl/mgl32"
@@ -138,9 +138,8 @@ func (c *Camera) LeftEyeViewMatrix() mgl32.Mat4 {
 	rightVec := c.RightWardsVector()
 	eyepos := c.Position.Sub(rightVec.Mul(c.IPD/2))
 	rotation := c.Orientation.Mat4()
-	log.Printf("Left eye position: %v", eyepos)
+	
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
-	log.Printf("Left eye translation matrix: %v", translation)
 	return rotation.Mul4(translation)
 }
 // Support 3D displays, by returning the view matrix for the left eye
@@ -149,9 +148,7 @@ func (c *Camera) RightEyeViewMatrix() mgl32.Mat4 {
 	rightVec := c.RightWardsVector()
 	eyepos := c.Position.Add(rightVec.Mul(c.IPD/2))
 	rotation := c.Orientation.Mat4()
-	log.Printf("Right eye position: %v", eyepos)
 	translation := mgl32.Translate3D(-eyepos.X(), -eyepos.Y(), -eyepos.Z())
-	log.Printf("Right eye translation matrix: %v", translation)
 	return rotation.Mul4(translation)
 }
 
@@ -175,15 +172,47 @@ func (c *Camera) RightEyeFrustrum() mgl32.Mat4 {
 	if c.FOV == 0 {
 		panic("FOV is zero")
 	}
-	aspect_ratio  := c.Screenwidth / c.Screenheight
+	aspect_ratio  := c.Screenwidth / c.Screenheight/2
 	frustumshift := (c.IPD/2)*c.Near/c.Far
 	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
 	right := aspect_ratio*top+frustumshift
-	left := aspect_ratio*top-frustumshift
+	left := -aspect_ratio*top+frustumshift
 	bottom := -top
 	frustrum := mgl32.Frustum(left, right, bottom, top, c.Near, c.Far)
 	return frustrum
 }
+
+// Calculate the frustrum matrix for the right eye
+func (c *Camera) LeftEyeFrustrum() mgl32.Mat4 {
+	if c.Screenheight == 0 {
+		panic("Screen height is zero")
+	}
+	if c.Screenwidth == 0 {
+		panic("Screen width is zero")
+	}
+	if c.IPD == 0 {
+		panic("IPD is zero")
+	}
+	if c.Near == 0 {
+		panic("Near is zero")
+	}
+	if c.Far == 0 {
+		panic("Far is zero")
+	}
+	if c.FOV == 0 {
+		panic("FOV is zero")
+	}
+	aspect_ratio  := c.Screenwidth / c.Screenheight/2
+	frustumshift := (c.IPD/2)*c.Near/c.Far
+	top := c.Near * float32(math.Tan(float64(c.FOV/2)))
+	right := aspect_ratio*top-frustumshift
+	left := -aspect_ratio*top-frustumshift
+	bottom := -top
+	frustrum := mgl32.Frustum(left, right, bottom, top, c.Near, c.Far)
+	return frustrum
+}
+
+
 
 //Reset the camera to its initial position
 func (c *Camera) Reset() {
