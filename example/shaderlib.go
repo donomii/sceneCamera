@@ -1,13 +1,18 @@
 package main
 
 import (
-"bytes"
+	"bytes"
 	"fmt"
 	"image"
+	
 	"image/draw"
+	_ "image/jpeg"
 	_ "image/png"
 	"strings"
 
+	//"log"
+
+	"github.com/donomii/glim"
 	"github.com/go-gl/gl/v3.2-core/gl"
 )
 
@@ -69,6 +74,7 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
+//Make an image from compressed file data
 func newTexture(data []byte) (uint32, error) {
 	imgFile := bytes.NewReader(data)
 	img, _, err := image.Decode(imgFile)
@@ -81,6 +87,24 @@ func newTexture(data []byte) (uint32, error) {
 		return 0, fmt.Errorf("unsupported stride")
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	data, width, height := glim.GFormatToImage(rgba, nil, img.Bounds().Dx(), img.Bounds().Dy())
+	//Inspect each pixel and set alpha to 0.0 if it is white, or light grey
+	for i := 0; i < len(data)-4; i += 4 {
+		
+		rgba.Pix[i+3] = 255
+		
+		if data[i] >200 && data[i+1] > 200 && data[i+2] > 200 {
+			//log.Printf("Setting alpha to 0.0")
+			data[i+3] = 0
+		
+		data[i] = 255
+		data[i+1] = 255
+		data[i+2] = 255
+		}
+		
+		//log.Printf("Pixel: %v %v %v %v", rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], rgba.Pix[i+3])
+	}
+
 
 	var texture uint32
 	gl.GenTextures(1, &texture)
@@ -94,12 +118,12 @@ func newTexture(data []byte) (uint32, error) {
 		gl.TEXTURE_2D,
 		0,
 		gl.RGBA,
-		int32(rgba.Rect.Size().X),
-		int32(rgba.Rect.Size().Y),
+		int32(width),
+		int32(height),
 		0,
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
-		gl.Ptr(rgba.Pix))
+		gl.Ptr(data))
 
 	return texture, nil
 }
@@ -138,7 +162,15 @@ uniform sampler2D tex;
 in vec2 fragTexCoord;
 out vec4 outputColor;
 void main() {
-    outputColor = texture(tex, fragTexCoord);
+    vec4 texColor = texture(tex, fragTexCoord);
+	if (texColor.a >0.1) {
+		//texColor.r = 1.0;
+		
+	}
+
+	//outputColor = vec4(texColor.a);
+	outputColor = texColor;
+	//outputColor = vec4(fragTexCoord.x,outputColor.g, outputColor.b,0.0);
 	//outputColor = vec4(0.0,1.0,0.0,1.0);
 }
 ` + "\x00"

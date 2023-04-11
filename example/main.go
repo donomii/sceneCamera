@@ -7,15 +7,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"time"
+	"sort"
 
+	
 	"github.com/donomii/goof"
+
 	"github.com/mattn/go-shellwords"
 
 	//"time"
@@ -37,7 +42,7 @@ var WantSBS bool
 
 // Arrange that main.main runs on main thread.
 func init() {
-	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
+	flag.BoolVar(&WantSBS, "sbs", true, "Side by side 3D")
 	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
@@ -49,6 +54,7 @@ type State struct {
 	Vao            uint32
 	Vbo            uint32
 	Texture        uint32
+	TextureBank []uint32
 	TextureUniform int32
 	VertAttrib     uint32
 	Angle          float64
@@ -57,9 +63,16 @@ type State struct {
 	TexCoordAttrib uint32
 }
 
+type tree_struct struct {
+	X float32
+	Y float32
+	Z float32
+}
+
 var winWidth = 180
 var winHeight = 180
 var lasttime float64
+var trees []tree_struct
 
 var launchShellList arrayFlags
 var launchList arrayFlags
@@ -86,7 +99,7 @@ func main() {
 		go drainChannel(err)
 	}
 
-	camera = Cameras.New(3)
+	camera = Cameras.New(2)
 	camera.SetPosition(10, 10, 10)
 	//camera.SetUp(0, 0, 1)
 	camera.SetIPD(1.0)
@@ -194,6 +207,17 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	//Load textures into texture bank
+
+	state.TextureBank = make([]uint32, 2)
+	for i, textureFile := range []string{ "logo.png", "tree.jpg"} {
+		log.Printf("Loading texture %v", textureFile)
+		//Load an image from a file
+		data ,_:= ioutil.ReadFile(textureFile)
+		state.TextureBank[i],_ = newTexture(data)
+
+	}
+
 	// Configure the vertex data
 	gl.GenVertexArrays(1, &state.Vao)
 	gl.BindVertexArray(state.Vao)
@@ -213,7 +237,13 @@ func main() {
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
+	
 	gl.DepthFunc(gl.LESS)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	
+	//gl.Enable(gl.TEXTURE_2D)
+
 	gl.UseProgram(state.Program)
 	gl.ClearColor(1.0, 1.0, 1.0, 0.0)
 
@@ -223,6 +253,16 @@ func main() {
 	//Choose the texture we just created and uploaded
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, state.Texture)
+
+	//Position some trees
+	trees = make([]tree_struct, 0)
+	for i:=0; i<10; i++ {
+		//make random location between -10 and 10
+		x := rand.Float32() * 20 - 10
+		y := rand.Float32() * 20 - 10
+		z := rand.Float32() * 20 - 10
+		trees = append(trees, tree_struct{X: x, Y: y, Z: z})
+	}
 
 	for !win.ShouldClose() {
 
@@ -253,6 +293,7 @@ func gfxMain(win *glfw.Window, state *State) {
 	elapsed := now - state.PreviousTime
 
 	if elapsed > 0.050 && 1 != win.GetAttrib(glfw.Iconified) {
+		//gl.ClearColor(0.0, 1.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		//fmt.Printf("elapsed: %v\n", elapsed)
 		state.PreviousTime = now
@@ -307,6 +348,18 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projectionMatrix[0])
 
+
+	//Set the texture to use
+	gl.Uniform1i(gl.GetUniformLocation(state.Program, gl.Str("tex\x00")), 0)
+	//Bind the texture
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, state.Texture)
+
+
+
+	gl.Disable(gl.BLEND)
+
+	//Draw the ground layer
 	for i := -10; i < 11; i++ {
 		for j := -10; j < 11; j++ {
 
@@ -320,6 +373,38 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 		}
 	}
 
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, state.TextureBank[1])
+
+	PI := float32(3.14159265358979323846)
+
+	//Sort the trees by distance from camera
+	sort.Slice(trees, func(i, j int) bool {
+		//Subtract the camera position from the tree position
+		treeVeci := mgl32.Vec3{trees[i].X, trees[i].Y, trees[i].Z}
+		cameraVeci := mgl32.Vec3{camera.Position.X(), camera.Position.Y(), camera.Position.Z()}
+		treeDisVeci := treeVeci.Sub(cameraVeci)
+		treeDisi := treeDisVeci.Len()
+
+		treeVecj := mgl32.Vec3{trees[j].X, trees[j].Y, trees[j].Z}
+		cameraVecj := mgl32.Vec3{camera.Position.X(), camera.Position.Y(), camera.Position.Z()}
+		treeDisVecj := treeVecj.Sub(cameraVecj)
+		treeDisj := treeDisVecj.Len()
+
+
+		return treeDisi>treeDisj
+	})
+	// Draw the trees
+	for _, tree := range trees {
+		model := mgl32.Ident4()
+		model = model.Mul4(mgl32.Translate3D(tree.X, tree.Y, 2.0))
+		model = model.Mul4(mgl32.HomogRotate3DY(PI))
+
+		gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
+		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
+	}
 }
 
 func checkGlError() {
