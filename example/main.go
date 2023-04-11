@@ -15,10 +15,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"time"
 	"sort"
+	"time"
 
-	
 	"github.com/donomii/goof"
 
 	"github.com/mattn/go-shellwords"
@@ -42,7 +41,7 @@ var WantSBS bool
 
 // Arrange that main.main runs on main thread.
 func init() {
-	flag.BoolVar(&WantSBS, "sbs", true, "Side by side 3D")
+	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
 	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
@@ -54,7 +53,7 @@ type State struct {
 	Vao            uint32
 	Vbo            uint32
 	Texture        uint32
-	TextureBank []uint32
+	TextureBank    []uint32
 	TextureUniform int32
 	VertAttrib     uint32
 	Angle          float64
@@ -100,9 +99,10 @@ func main() {
 	}
 
 	camera = Cameras.New(2)
-	camera.SetPosition(10, 10, 10)
-	//camera.SetUp(0, 0, 1)
+	camera.SetPosition(12, 14, 2)
+	camera.SetUp(0, 0, 1)
 	camera.SetIPD(1.0)
+	camera.LookAt(0, 0, 2)
 	PI := 3.1415927
 	camera.FOV = float32(PI / 4)
 	camera.Near = 1.0
@@ -210,11 +210,11 @@ func main() {
 	//Load textures into texture bank
 
 	state.TextureBank = make([]uint32, 2)
-	for i, textureFile := range []string{ "logo.png", "tree.jpg"} {
+	for i, textureFile := range []string{"logo.png", "tree.jpg"} {
 		log.Printf("Loading texture %v", textureFile)
 		//Load an image from a file
-		data ,_:= ioutil.ReadFile(textureFile)
-		state.TextureBank[i],_ = newTexture(data)
+		data, _ := ioutil.ReadFile(textureFile)
+		state.TextureBank[i], _ = newTexture(data)
 
 	}
 
@@ -237,11 +237,11 @@ func main() {
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
-	
+
 	gl.DepthFunc(gl.LESS)
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	
+
 	//gl.Enable(gl.TEXTURE_2D)
 
 	gl.UseProgram(state.Program)
@@ -256,18 +256,47 @@ func main() {
 
 	//Position some trees
 	trees = make([]tree_struct, 0)
-	for i:=0; i<10; i++ {
+	for i := 0; i < 10; i++ {
 		//make random location between -10 and 10
-		x := rand.Float32() * 20 - 10
-		y := rand.Float32() * 20 - 10
-		z := rand.Float32() * 20 - 10
+		x := rand.Float32()*20 - 10
+		y := rand.Float32()*20 - 10
+		z := rand.Float32()*20 - 10
 		trees = append(trees, tree_struct{X: x, Y: y, Z: z})
 	}
 
+	go func() {
+		for {
+			scale := float32(0.5)  //Multiplier for the camera movement
+			//Move the camera
+			MoveStep(win, scale)
+			time.Sleep(25 * time.Millisecond)
+		}
+	}()
 	for !win.ShouldClose() {
 
+		mode := glfw.GetPrimaryMonitor().GetVideoMode()
+		screenW, screenH := mode.Width, mode.Height
+		if screenW >= screenH*2-1 {
+			//SBS display mode
+			if !WantSBS {
+				WantSBS = true
+				fmt.Printf("SBS mode %v %v\n", screenW, screenH)
+				win.Maximize()
+			}
+		} else {
+			if WantSBS {
+				//Normal display mode
+				WantSBS = false
+				win.Restore()
+			}
+		}
+
+	
 		gfxMain(win, state)
 		glfw.PollEvents()
+		time.Sleep(1 * time.Millisecond)
+		glfw.PollEvents()
+
 	}
 	shutdown()
 
@@ -281,6 +310,7 @@ func shutdown() {
 }
 
 func gfxMain(win *glfw.Window, state *State) {
+
 	//fmt.Println("Draw")
 	//width, height := win.GetSize()
 	//gl.Viewport(0, 0, int32(width-1), int32(height-1))
@@ -312,7 +342,7 @@ func gfxMain(win *glfw.Window, state *State) {
 		win.SwapBuffers()
 
 	}
-	time.Sleep(1 * time.Millisecond)
+
 }
 
 func RenderStereoFrame(state *State, discard mgl32.Mat4) {
@@ -327,13 +357,13 @@ func RenderStereoFrame(state *State, discard mgl32.Mat4) {
 	// Set viewport to left half of window
 	gl.Viewport(0, 0, int32(width/2), int32(height))
 	LeftviewMatrix := camera.LeftEyeViewMatrix()
-	fmt.Println("Left Eye View Matrix", LeftviewMatrix)
+	//fmt.Println("Left Eye View Matrix", LeftviewMatrix)
 	LeftEyeFrustrum := camera.LeftEyeFrustrum()
 	RenderFrame(state, LeftviewMatrix, LeftEyeFrustrum)
 	//Set viewport to right half of window
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
 	viewMatrix := camera.RightEyeViewMatrix()
-	fmt.Println("Right Eye View Matrix", viewMatrix)
+	//fmt.Println("Right Eye View Matrix", viewMatrix)
 	RightProjectionMatrix := camera.RightEyeFrustrum()
 	RenderFrame(state, viewMatrix, RightProjectionMatrix)
 	//Set viewport to whole window
@@ -348,14 +378,11 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projectionMatrix[0])
 
-
 	//Set the texture to use
 	gl.Uniform1i(gl.GetUniformLocation(state.Program, gl.Str("tex\x00")), 0)
 	//Bind the texture
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, state.Texture)
-
-
 
 	gl.Disable(gl.BLEND)
 
@@ -365,7 +392,6 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 
 			model := mgl32.Ident4()
 			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
-		
 
 			gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
 
@@ -393,13 +419,14 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 		treeDisVecj := treeVecj.Sub(cameraVecj)
 		treeDisj := treeDisVecj.Len()
 
-
-		return treeDisi>treeDisj
+		return treeDisi > treeDisj
 	})
 	// Draw the trees
 	for _, tree := range trees {
 		model := mgl32.Ident4()
+
 		model = model.Mul4(mgl32.Translate3D(tree.X, tree.Y, 2.0))
+
 		model = model.Mul4(mgl32.HomogRotate3DY(PI))
 
 		gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])

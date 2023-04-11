@@ -8,7 +8,7 @@ Easy 3D camera management
 Description
 ===========
 
-SceneCamera manages the camera view for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
+SceneCamera manages the camera for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
 
 It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
 
@@ -104,6 +104,5 @@ An example program is included in the examples directory.  It can be run with
 
 ## Known issues
 
-RTS mode is not complete, it does not rotate correctly.
 
 It's not fast, but it's fast enough to handle movement in a game.
