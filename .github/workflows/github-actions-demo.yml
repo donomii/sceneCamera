@@ -15,7 +15,7 @@ jobs:
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
       - name: Install system libraries
-        run: apt-get install -y libegl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxinerama-dev  libxinerama1 libxcursor-dev libxi-dev xorg-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libasound2-dev  libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+        run: sudo apt-get install -y libegl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxinerama-dev  libxinerama1 libxcursor-dev libxi-dev xorg-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libasound2-dev  libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
       - name: Install go modules
         run: go get "github.com/donomii/goof" "github.com/mattn/go-shellwords" "github.com/go-gl/mathgl/mgl32" "github.com/go-gl/gl/v3.2-core/gl" "github.com/go-gl/glfw/v3.3/glfw" "github.com/donomii/glim"
       - name: Build program
