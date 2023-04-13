@@ -17,6 +17,8 @@ import (
 	"runtime/debug"
 	"sort"
 	"time"
+	joystick "../joystick"
+	messages "../messages"
 
 	"github.com/donomii/goof"
 
@@ -28,12 +30,12 @@ import (
 
 	Cameras "github.com/donomii/sceneCamera"
 	"github.com/go-gl/gl/v3.2-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 
 	_ "embed"
 )
 
-//go:embed logo.png
+//go:embed grass.png
 var logo_bytes []byte
 
 var MainWin *glfw.Window
@@ -135,7 +137,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	win, err := glfw.CreateWindow(winWidth, winHeight, "Grafana", nil, nil)
+	win, err := glfw.CreateWindow(winWidth, winHeight, "Demo", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -184,11 +186,12 @@ func main() {
 	projectionUniform := gl.GetUniformLocation(state.Program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
+	/*
 	//Setup the camera
 	camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
 	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
 	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
-
+*/
 	//Setup the cube
 	model := mgl32.Ident4()
 	state.ModelUniform = gl.GetUniformLocation(state.Program, gl.Str("model\x00"))
@@ -210,7 +213,7 @@ func main() {
 	//Load textures into texture bank
 
 	state.TextureBank = make([]uint32, 2)
-	for i, textureFile := range []string{"logo.png", "tree.jpg"} {
+	for i, textureFile := range []string{"grass.png", "tree.jpg"} {
 		log.Printf("Loading texture %v", textureFile)
 		//Load an image from a file
 		data, _ := ioutil.ReadFile(textureFile)
@@ -272,8 +275,17 @@ func main() {
 			time.Sleep(25 * time.Millisecond)
 		}
 	}()
+	joystick.Setup_joystick()
+	messages.Register("JoystickY", "JoystickY", func(name , id string, args interface{}) {
+		amount := args.(float64)
+		camera.Move(0, float32(amount))
+	})
+	messages.Register("JoystickX", "JoystickX", func(name , id string, args interface{}) {
+		amount := args.(float64)
+		camera.Move(2, float32(amount))
+	})
 	for !win.ShouldClose() {
-
+		joystick.DoJoystick()
 		mode := glfw.GetPrimaryMonitor().GetVideoMode()
 		screenW, screenH := mode.Width, mode.Height
 		if screenW >= screenH*2-1 {
