@@ -2,7 +2,7 @@ package joystick
 
 import (
 	messages "../messages"
-	"fmt"
+	
 	"github.com/donomii/goof"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
