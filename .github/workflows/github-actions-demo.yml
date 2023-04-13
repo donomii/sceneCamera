@@ -7,6 +7,7 @@ jobs:
     env:
       GO111MODULE: auto
     steps:
+      - uses: actions/checkout@v3
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
@@ -20,6 +21,10 @@ jobs:
         run: go get "github.com/donomii/goof" "github.com/mattn/go-shellwords" "github.com/go-gl/mathgl/mgl32" "github.com/go-gl/gl/v3.2-core/gl" "github.com/go-gl/glfw/v3.3/glfw" "github.com/donomii/glim" "github.com/cornelk/hashmap" "github.com/donomii/sceneCamera"
       - name: Build program
         run: go build -o 3d ./example
+      - uses: actions/upload-artifact@v3
+        with:
+          name: 3dgame
+          path: 3d
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
