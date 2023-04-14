@@ -7,7 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"embed"
 	"log"
 	"math/rand"
 	"os"
@@ -19,6 +19,7 @@ import (
 	"time"
 	joystick "../joystick"
 	messages "../messages"
+	assets "../assets"
 
 	"github.com/donomii/goof"
 
@@ -35,8 +36,8 @@ import (
 	_ "embed"
 )
 
-//go:embed grass.png
-var logo_bytes []byte
+//go:embed assets/*
+var embeddedFS embed.FS
 
 var MainWin *glfw.Window
 var WantSBS bool
@@ -205,7 +206,7 @@ func main() {
 	gl.BindFragDataLocation(state.Program, 0, gl.Str("outputColor\x00"))
 
 	// Load the texture
-	state.Texture, err = newTexture(logo_bytes)
+	state.Texture, err = newTexture(assets.GetFileByName(embeddedFS, "assets/grass.png"))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -216,7 +217,7 @@ func main() {
 	for i, textureFile := range []string{"grass.png", "tree.jpg"} {
 		log.Printf("Loading texture %v", textureFile)
 		//Load an image from a file
-		data, _ := ioutil.ReadFile(textureFile)
+		data := assets.GetFileByName(embeddedFS, "assets/"+textureFile)
 		state.TextureBank[i], _ = newTexture(data)
 
 	}

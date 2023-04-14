@@ -7,16 +7,31 @@ import (
 )
 
 var oldXpos float64
+var oldYpos float64
 var MouseWheelValue float32
+var MouseLook bool
 
 func handleMouseMove(w *glfw.Window, xpos float64, ypos float64) {
-	//log.Printf("Mouse moved: %v,%v", xpos, ypos)
-	//diff := xpos - oldXpos
+	log.Printf("Mouse moved: %v,%v", xpos, ypos)
+	xdiff := xpos - oldXpos
+	ydiff := ypos - oldYpos
+	oldYpos = ypos
+	oldXpos = xpos
+	if MouseLook {
+	camera.Move(8, float32(-xdiff/500))
+	camera.Move(6, float32(-ydiff/500))
+	}
 
 }
 func handleMouseButton(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 	log.Printf("Got mouse button %v,%v,%v", button, mod, action)
 	//handleKey(w, key, scancode, action, mods)
+	if action == 1 {
+		MouseLook = true
+	}
+	if action == 0 {
+		MouseLook = false
+	}
 }
 
 func handleMouseWheel(w *glfw.Window, xoff float64, yoff float64) {
