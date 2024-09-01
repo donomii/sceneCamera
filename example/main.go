@@ -18,7 +18,7 @@ import (
 	"sort"
 	"time"
 	joystick "github.com/donomii/sceneCamera/joystick"
-	messages "github.com/donomii/sceneCamera/messages"
+	//messages "github.com/donomii/sceneCamera/messages"
 
 	"github.com/donomii/goof"
 
@@ -215,6 +215,7 @@ func main() {
 		}
 	}()
 	joystick.Setup_joystick()
+	/*
 	messages.Register("JoystickY", "JoystickY", func(name , id string, args interface{}) {
 		amount := args.(float64)
 		camera.Move(0, float32(amount))
@@ -223,6 +224,7 @@ func main() {
 		amount := args.(float64)
 		camera.Move(2, float32(amount))
 	})
+		*/
 	for !win.ShouldClose() {
 		joystick.DoJoystick()
 		mode := glfw.GetPrimaryMonitor().GetVideoMode()

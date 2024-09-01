@@ -1,7 +1,7 @@
 package joystick
 
 import (
-	messages "github.com/donomii/sceneCamera/messages"
+	//messages "github.com/donomii/sceneCamera/messages"
 	
 	"github.com/donomii/goof"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -56,7 +56,7 @@ func DoJoystick() {
 
 				if !latches[i] {
 					latches[i] = true
-					messages.SendMessage("Button", i)
+					//messages.SendMessage("Button", i)
 
 				}
 			} else {
@@ -68,18 +68,18 @@ func DoJoystick() {
 		if joystick_type == "steamdeck" {
 			for i := 0; i < len(joy.GetAxes()); i = i + 3 {
 				var ydeflect float64 = 0
-				var trigger float64 = 0
+				//var trigger float64 = 0
 				xdeflect := float64(joy.GetAxes()[i])
 				if i+1 < len(joy.GetAxes()) {
 					ydeflect = float64(joy.GetAxes()[i+1])
 				}
 				if i+2 < len(joy.GetAxes()) {
-					trigger = float64(joy.GetAxes()[i+2])
+					//trigger = float64(joy.GetAxes()[i+2])
 				}
 				if outOfDeadZone(deadZone, xdeflect, ydeflect) {
-					messages.SendMessage("JoystickY", ydeflect/-100)
+					/*messages.SendMessage("JoystickY", ydeflect/-100)
 					messages.SendMessage("JoystickX", xdeflect/-100)
-					messages.SendMessage("JoystickTrigger", trigger)
+					messages.SendMessage("JoystickTrigger", trigger)*/
 				}
 				/*
 					if xdeflect > deadZone || xdeflect < -deadZone || ydeflect > deadZone || ydeflect < -deadZone {
@@ -97,18 +97,18 @@ func DoJoystick() {
 		if joystick_type == "F310" {
 			for i := 0; i < len(joy.GetAxes()); i = i + 2 {
 				var ydeflect float64 = 0
-				var trigger float64 = 0
+				//var trigger float64 = 0
 				xdeflect := float64(joy.GetAxes()[i])
 				if i+1 < len(joy.GetAxes()) {
 					ydeflect = float64(joy.GetAxes()[i+1])
 				}
 				if i+2 < len(joy.GetAxes()) {
-					trigger = float64(joy.GetAxes()[i+2])
+					//trigger = float64(joy.GetAxes()[i+2])
 				}
 				if outOfDeadZone(deadZone, xdeflect, ydeflect) {
-					messages.SendMessage("JoystickY", ydeflect/-100)
+					/*messages.SendMessage("JoystickY", ydeflect/-100)
 					messages.SendMessage("JoystickX", xdeflect/-100)
-					messages.SendMessage("JoystickTrigger", trigger)
+					messages.SendMessage("JoystickTrigger", trigger)*/
 				}
 
 				/*
