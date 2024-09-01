@@ -1,7 +1,7 @@
 package joystick
 
 import (
-	messages "../messages"
+	messages "github.com/donomii/sceneCamera/messages"
 	
 	"github.com/donomii/goof"
 	"github.com/go-gl/glfw/v3.3/glfw"

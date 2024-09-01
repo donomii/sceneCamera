@@ -17,12 +17,13 @@ import (
 	"runtime/debug"
 	"sort"
 	"time"
-	joystick "../joystick"
-	messages "../messages"
+	joystick "github.com/donomii/sceneCamera/joystick"
+	messages "github.com/donomii/sceneCamera/messages"
 
 	"github.com/donomii/goof"
 
 	"github.com/mattn/go-shellwords"
+
 
 	//"time"
 
@@ -41,9 +42,17 @@ var embeddedFS embed.FS
 var MainWin *glfw.Window
 var WantSBS bool
 
+var (
+	// ... other variables ...
+	cameraMode    int
+	camera        *Cameras.Camera
+	switchModeKey glfw.Key = glfw.KeyTab // Default key to switch camera mode
+)
+
 // Arrange that main.main runs on main thread.
 func init() {
 	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
+	flag.IntVar(&cameraMode, "camera-mode", 1, "Set initial camera mode (1: Museum, 2: FPS, 3: RTS)")
 	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
@@ -85,7 +94,13 @@ func drainChannel(ch chan []byte) {
 	}
 }
 
-var camera *Cameras.Camera
+
+func switchCameraMode() {
+	cameraMode = (cameraMode % 3) + 1
+	camera.SetMode(cameraMode)
+	log.Printf("Switched to camera mode: %d", cameraMode)
+}
+
 
 func main() {
 	flag.Var(&launchShellList, "launchShell", "Run shell command at start.  May be repeated to launch multiple commands.")
@@ -100,7 +115,8 @@ func main() {
 		go drainChannel(err)
 	}
 
-	camera = Cameras.New(2)
+
+	camera = Cameras.New(cameraMode)
 	camera.SetPosition(12, 14, 2)
 	camera.SetUp(0, 0, 1)
 	camera.SetIPD(1.0)

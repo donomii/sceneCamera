@@ -59,6 +59,10 @@ func handleKey(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 		keyLatch.Set(key, true)
 	}
 
+	if key == switchModeKey && action == glfw.Press {
+		switchCameraMode()
+	}
+
 	if action == 0 && mods == 0 {
 		keyLatch.Set(key,false)
 	}
