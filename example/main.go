@@ -52,7 +52,7 @@ var (
 // Arrange that main.main runs on main thread.
 func init() {
 	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
-	flag.IntVar(&cameraMode, "camera-mode", 1, "Set initial camera mode (1: Museum, 2: FPS, 3: RTS)")
+	flag.IntVar(&cameraMode, "camera-mode", 2, "Set initial camera mode (1: Museum, 2: FPS, 3: RTS)")
 	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
@@ -159,10 +159,6 @@ func main() {
 	}
 
 	MainWin = win
-	go func() {
-		time.Sleep(5 * time.Second)
-		win.Iconify()
-	}()
 
 	win.MakeContextCurrent()
 
