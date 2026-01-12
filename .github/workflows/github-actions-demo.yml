@@ -21,7 +21,7 @@ jobs:
         run: go get "github.com/donomii/goof" "github.com/mattn/go-shellwords" "github.com/go-gl/mathgl/mgl32" "github.com/go-gl/gl/v3.2-core/gl" "github.com/go-gl/glfw/v3.3/glfw" "github.com/donomii/glim" "github.com/cornelk/hashmap" "github.com/donomii/sceneCamera"
       - name: Build program
         run: go build -o 3d ./example
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: 3dgame
           path: 3d
