@@ -10,6 +10,8 @@ Description
 
 SceneCamera manages the camera for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
 
+<video src="camerademo_480w_h264.mp4" width="480" controls></video>
+
 It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
 
 It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the matrices into your graphics library's matrix format.
