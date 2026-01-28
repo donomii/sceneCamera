@@ -90,7 +90,7 @@ All these settings can be changed by setting the appropriate field.
 
 ## Typical use
 
-    "github.com/donomii/sceneCamera"
+    import "github.com/donomii/sceneCamera"
 
     //Create a new camera
     camera := sceneCamera.New(2)  //FPS mode
