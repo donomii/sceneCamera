@@ -16,6 +16,13 @@ It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real 
 
 It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the matrices into your graphics library's matrix format.
 
+### Examples
+
+An example program is included in the examples directory.  It can be run with
+
+    cd examples
+    go run .
+
 ### Museum mode
 Museum mode is a simple camera that orbits around a point, and can zoom in and out.  Draw your object at the origin, and the camera will orbit around it.  It is useful for inspecting 3D models from all angles.
 
@@ -97,14 +104,3 @@ All these settings can be changed by setting the appropriate field.
 
     // Draw your scene
 
-## Examples
-
-An example program is included in the examples directory.  It can be run with
-
-    cd examples
-    go run .
-
-## Known issues
-
-
-It's not fast, but it's fast enough to handle movement in a game.
