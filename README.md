@@ -93,7 +93,7 @@ All these settings can be changed by setting the appropriate field.
     "github.com/donomii/sceneCamera"
 
     //Create a new camera
-    camera := Cameras.New(2)  //FPS mode
+    camera := sceneCamera.New(2)  //FPS mode
 
     camera.Move(0,0.5)  //Move forwards 0.5 world units
 
