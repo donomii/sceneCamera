@@ -10,7 +10,7 @@ Description
 
 SceneCamera manages the camera for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
 
-<video src="camerademo_480w_h264.mp4" width="480" controls></video>
+![Demo](camerademo.gif)
 
 It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
 
