@@ -1,31 +1,80 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
-  Explore-GitHub-Actions:
+  test:
+    name: Go ${{ matrix.go-version }}
     runs-on: ubuntu-latest
-    env:
-      GO111MODULE: auto
+    strategy:
+      matrix:
+        go-version: ["1.24.x", "1.25.x", "1.26.x"]
     steps:
-      - uses: actions/checkout@v3
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: Install system libraries
-        run: sudo apt-get install -y libegl1-mesa-dev libgles2-mesa-dev libx11-dev libxrandr-dev libxinerama-dev  libxinerama1 libxcursor-dev libxi-dev xorg-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libasound2-dev  libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
-      - name: Install go modules
-        run: go get "github.com/donomii/goof" "github.com/mattn/go-shellwords" "github.com/go-gl/mathgl/mgl32" "github.com/go-gl/gl/v3.2-core/gl" "github.com/go-gl/glfw/v3.3/glfw" "github.com/donomii/glim" "github.com/cornelk/hashmap" "github.com/donomii/sceneCamera"
-      - name: Build program
-        run: go build -o 3d ./example
-      - uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
         with:
-          name: 3dgame
-          path: 3d
-      - name: List files in the repository
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install GLFW dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: Test
+        run: go test ./...
+
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.26.x"
+
+      - name: Install GLFW dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: Check formatting
         run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+          go fmt ./...
+          git diff --exit-code
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Examples
+        run: go test -run '^Example' ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+
+      - name: Test with race detection
+        run: go test -race ./...
+
+      - name: Generate coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        if: github.event_name == 'push'
+        uses: codecov/codecov-action@v7
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: true
+          use_oidc: true
+
+      - name: Build example
+        working-directory: example
+        run: |
+          go mod edit -replace github.com/donomii/sceneCamera=..
+          go build .

@@ -14,38 +14,38 @@ import (
 
 //Messages are never queued, they are delivered immediately.
 
-var MessageRegistry *hashmap.Map[string, *hashmap.Map[string, func(name , id string, args interface{})]] = hashmap.New[string, *hashmap.Map[string, func(name , id string, args interface{})]]()
+var MessageRegistry *hashmap.Map[string, *hashmap.Map[string, func(name, id string, args interface{})]] = hashmap.New[string, *hashmap.Map[string, func(name, id string, args interface{})]]()
 
-//Register your message handler with the message system.  Name is the lookup name for the message, id is a free text field
-//that you can use to identify your handler, and handler is the function that will be called when the message is sent.
+// Register your message handler with the message system.  Name is the lookup name for the message, id is a free text field
+// that you can use to identify your handler, and handler is the function that will be called when the message is sent.
 //
-//There can be as many handlers as you want for a message.  The id is used to identify the handler, so you can remove it later.
-//Registering another handler with the same id will replace the old handler.
-func Register( name string, id string, handler func(name , id string, args interface{})) {
+// There can be as many handlers as you want for a message.  The id is used to identify the handler, so you can remove it later.
+// Registering another handler with the same id will replace the old handler.
+func Register(name string, id string, handler func(name, id string, args interface{})) {
 	key_name := name
-	ids,_ := MessageRegistry.Get(key_name)
+	ids, _ := MessageRegistry.Get(key_name)
 	if ids == nil {
-		ids = hashmap.New[string, func(name , id string, args interface{})]()
+		ids = hashmap.New[string, func(name, id string, args interface{})]()
 		MessageRegistry.Set(key_name, ids)
 	}
-	f,_ := ids.Get(id)
+	f, _ := ids.Get(id)
 	if f == nil {
-		ids := hashmap.New[string, func(name , id string, args interface{})]()
+		ids := hashmap.New[string, func(name, id string, args interface{})]()
 		MessageRegistry.Set(key_name, ids)
 	}
 	ids.Set(id, handler)
 	MessageRegistry.Set(key_name, ids)
 }
 
-//Delete a handler.  The name and id must be the same as the ones used to register the handler.
+// Delete a handler.  The name and id must be the same as the ones used to register the handler.
 func Unregister(name string, id string) {
-	key_name :=  name
-	ids,_ := MessageRegistry.Get(key_name)
+	key_name := name
+	ids, _ := MessageRegistry.Get(key_name)
 	ids.Del(id)
 }
 
-//Send a message.  The name is the lookup name for the message, and args is the data to be sent to the handler.  Sendmessage calls the handler immediately (i.e. synchronously)
-func SendMessage( name string, args interface{}) {
+// Send a message.  The name is the lookup name for the message, and args is the data to be sent to the handler.  Sendmessage calls the handler immediately (i.e. synchronously)
+func SendMessage(name string, args interface{}) {
 
 	//log.Printf("SendMessage: %s, %v", name, args)
 	ids, _ := MessageRegistry.Get(name)
@@ -53,7 +53,7 @@ func SendMessage( name string, args interface{}) {
 		//TODO some kind of warning that you are sending messages to a non existant message handler?
 		return
 	}
-	ids.Range(func(key string, handler func(name , id string, args interface{})) bool {
+	ids.Range(func(key string, handler func(name, id string, args interface{})) bool {
 		handler(name, key, args)
 		return true
 	})

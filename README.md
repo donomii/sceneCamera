@@ -1,106 +1,107 @@
+# SceneCamera
+
+[![CI](https://github.com/donomii/sceneCamera/actions/workflows/github-actions-demo.yml/badge.svg)](https://github.com/donomii/sceneCamera/actions/workflows/github-actions-demo.yml)
+[![Codecov](https://codecov.io/gh/donomii/sceneCamera/branch/master/graph/badge.svg)](https://codecov.io/gh/donomii/sceneCamera)
 [![Go Reference](https://pkg.go.dev/badge/github.com/donomii/sceneCamera.svg)](https://pkg.go.dev/github.com/donomii/sceneCamera)
+[![Go Report Card](https://goreportcard.com/badge/github.com/donomii/sceneCamera)](https://goreportcard.com/report/github.com/donomii/sceneCamera)
 
-SceneCamera
-===========
-
-Easy 3D camera management
-
-Description
-===========
-
-SceneCamera manages the camera for 3D applications.  It provides the V, in the GL trinity MVP.  And if needed, the P as well.
+SceneCamera provides camera movement and view/projection matrices for Go 3D applications. It supports museum, first-person, and real-time strategy movement, plus side-by-side stereo rendering.
 
 ![Demo](camerademo.gif)
 
-It comes with 3 convenient modes, museum mode, first person mode, and RTS (Real Time Strategy) mode.
+It is designed for OpenGL but only depends on [mathgl](https://github.com/go-gl/mathgl). The returned matrices can be copied into another graphics library's matrix format.
 
-It is designed to work with OpenGL, but does not rely on any graphics libraries (just a matrix lib).  It could be used with other graphics libraries, but you may have to copy the matrices into your graphics library's matrix format.
+## Install
 
-### Examples
-
-An example program is included in the examples directory.  It can be run with
-
-    cd examples
-    go run .
-
-### Museum mode
-Museum mode is a simple camera that orbits around a point, and can zoom in and out.  Draw your object at the origin, and the camera will orbit around it.  It is useful for inspecting 3D models from all angles.
-
-### First person mode / flight mode
-
-The classic game mode.  Move forwards, backwards, strafe and turn.  It can also pitch, roll, and yaw, making it useful for flight simulators.
-
-### RTS mode
-
-The camera floats over a ground plane.  Forwards, backwards and strafe slide the camera along the ground plane.  It can also spin around a point on the the map, using the pitch and yaw.
-
-## SBS (Side by Side) rendering
-
-SceneCamera provides the correct matrices for rendering in SBS (or twin display) mode.  Rather than taking control of the render like many graphics libraries, sceneCamera just hands you the matrices so that you can use them in your own render.  See the example directory for more details.
-
-a quick summary:
+```text
+go get github.com/donomii/sceneCamera@latest
 ```
+
+## Quick start
+
+```go
+package main
+
+import (
+	"fmt"
+
+	sceneCamera "github.com/donomii/sceneCamera"
+)
+
+func main() {
+	camera := sceneCamera.New(2)
+	camera.Move(0, 0.5)
+
+	viewMatrix := camera.ViewMatrix()
+	fmt.Println(viewMatrix)
+}
+```
+
+Modes are selected when creating a camera:
+
+- `sceneCamera.New(1)` — museum mode, which orbits a target and zooms in or out.
+- `sceneCamera.New(2)` — FPS/flight mode, with translation, pitch, and yaw. Roll inputs are ignored.
+- `sceneCamera.New(3)` — RTS mode, which moves over a ground plane and orbits a point on that plane.
+
+`Move` takes a direction and an amount. Translation amounts use world units; rotation amounts use radians.
+
+| Direction | Operation |
+| --- | --- |
+| `0` | Forward |
+| `1` | Backward |
+| `2` | Left |
+| `3` | Right |
+| `4` | Up |
+| `5` | Down |
+| `6` | Pitch up |
+| `7` | Pitch down |
+| `8` | Yaw left |
+| `9` | Yaw right |
+| `10` | Roll left |
+| `11` | Roll right |
+
+Each mode applies only the operations that make sense for that camera style.
+
+## Side-by-side stereo rendering
+
+SceneCamera returns separate view and projection matrices for each eye without taking control of rendering:
+
+```go
 func RenderStereoFrame(state *State) {
-    // Set the inter-pupilary distance.  Not critical, but the wrong value will make you feel sick.
+	// Set the inter-pupillary distance in world units.
 	camera.SetIPD(2.0)
 
-	//get window width and height
 	width, height := MainWin.GetSize()
-	camera.Screenwidth = float32(width)/2
+	camera.Screenwidth = float32(width) / 2
 	camera.Screenheight = float32(height)
 
-
-    //Get the view matrix for the left eye
-	LeftviewMatrix := camera.LeftEyeViewMatrix()
-
-    //Get the projection matrix for the left eye
-	LeftEyeFrustrum := camera.LeftEyeFrustrum()
-
-	// Set the viewport to left half of the window
+	leftViewMatrix := camera.LeftEyeViewMatrix()
+	leftProjectionMatrix := camera.LeftEyeFrustum()
 	gl.Viewport(0, 0, int32(width/2), int32(height))
+	RenderFrame(state, leftViewMatrix, leftProjectionMatrix)
 
-    //Render the scene to the left eye
-	RenderFrame(state, LeftviewMatrix, LeftEyeFrustrum)
-
-
-
-    //Get the matrices for the right eye
-	viewMatrix := camera.RightEyeViewMatrix()
-	RightProjectionMatrix := camera.RightEyeFrustrum()
-
-    //Set the viewport to right half of the window
+	rightViewMatrix := camera.RightEyeViewMatrix()
+	rightProjectionMatrix := camera.RightEyeFrustum()
 	gl.Viewport(int32(width/2), 0, int32(width/2), int32(height))
+	RenderFrame(state, rightViewMatrix, rightProjectionMatrix)
 
-    Draw the scene to the right eye display
-	RenderFrame(state, viewMatrix, RightProjectionMatrix)
-
-
-	//Set viewport to whole window
 	gl.Viewport(0, 0, int32(width), int32(height))
 }
 ```
 
 ## Default position
 
-The camera starts at z=5 (0,0,5), looking at the origin(0,0,0).  Positive Y is up (0,1,0).
+Museum and FPS cameras start at `(0, 0, 5)`, looking at the origin, with positive Y as up.
 
-In RTS mode, the camera starts at (10,10,10), looking at the origin(0,0,0).  Positive **Z** is up (0,0,1).  The ground plane is at z=0, covering the x and y axes.  i.e. the ground normal vector is (0,0,1).
+RTS cameras start at `(5, 5, 5)`, looking at the origin, with positive Z as up. The default ground plane is `z=0`, with the normal `(0, 0, 1)`.
 
-All these settings can be changed by setting the appropriate field.
+These settings can be changed through the camera fields and setter methods.
 
-## Typical use
+## Example application
 
-    import "github.com/donomii/sceneCamera"
+The `example` directory contains an OpenGL application:
 
-    //Create a new camera
-    camera := sceneCamera.New(2)  //FPS mode
-
-    camera.Move(0,0.5)  //Move forwards 0.5 world units
-
-    viewMatrix := camera.ViewMatrix()  //Get the view matrix for the camera
-
-	cameraUniform := gl.GetUniformLocation(state.Program, gl.Str("camera\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &viewMatrix[0])
-
-    // Draw your scene
-
+```text
+cd example
+go run .
+```

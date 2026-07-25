@@ -20,31 +20,34 @@ package assets
 import (
 	"embed"
 	"errors"
+	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 )
 
 // GetFileByName retrieves a file's content by name from the provided embedded file system.
-// If the file is not found, it returns an error.
-func GetFileByName(embeddedFS embed.FS, fileName string) []byte{
+// It panics if the file cannot be opened, read, or closed.
+func GetFileByName(embeddedFS embed.FS, fileName string) []byte {
 	if fileName == "" {
-		panic( errors.New("file name cannot be empty"))
+		panic(errors.New("file name cannot be empty"))
 	}
 
 	file, err := embeddedFS.Open(fileName)
 	if err != nil {
-		panic( err)
+		panic(fmt.Errorf("open embedded file %q: %w", fileName, err))
 	}
-	defer file.Close()
 
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
-		panic( err)
+	content, readErr := io.ReadAll(file)
+	closeErr := file.Close()
+	if readErr != nil {
+		panic(fmt.Errorf("read embedded file %q: %w", fileName, readErr))
+	}
+	if closeErr != nil {
+		panic(fmt.Errorf("close embedded file %q: %w", fileName, closeErr))
 	}
 
 	return content
 }
-
 
 // ListFiles returns a list of FileInfo for all files in the provided embedded file system.
 func ListFiles(embeddedFS embed.FS) []string {
