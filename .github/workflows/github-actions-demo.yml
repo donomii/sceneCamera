@@ -76,5 +76,5 @@ jobs:
       - name: Build example
         working-directory: example
         run: |
-          go mod edit -replace github.com/donomii/sceneCamera=..
+          go work init . ..
           go build .
