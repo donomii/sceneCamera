@@ -5,11 +5,11 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
 	"fmt"
-	"embed"
 	"log"
-	"math/rand"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,13 +17,14 @@ import (
 	"runtime/debug"
 	"sort"
 	"time"
+
 	joystick "github.com/donomii/sceneCamera/joystick"
+
 	//messages "github.com/donomii/sceneCamera/messages"
 
 	"github.com/donomii/goof"
 
 	"github.com/mattn/go-shellwords"
-
 
 	//"time"
 
@@ -46,6 +47,7 @@ var (
 	// ... other variables ...
 	cameraMode    int
 	camera        *Cameras.Camera
+	recordDemo    string
 	switchModeKey glfw.Key = glfw.KeyTab // Default key to switch camera mode
 )
 
@@ -53,6 +55,7 @@ var (
 func init() {
 	flag.BoolVar(&WantSBS, "sbs", false, "Side by side 3D")
 	flag.IntVar(&cameraMode, "camera-mode", 2, "Set initial camera mode (1: Museum, 2: FPS, 3: RTS)")
+	flag.StringVar(&recordDemo, "record-demo", "", "Record a five-second demo GIF (rts or flight) and exit")
 	flag.Parse()
 	runtime.LockOSThread()
 	debug.SetGCPercent(-1)
@@ -84,6 +87,8 @@ var winHeight = 180
 var lasttime float64
 var trees []tree_struct
 
+const groundTileRadius = 15
+
 var launchShellList arrayFlags
 var launchList arrayFlags
 var runningProcs []context.CancelFunc
@@ -94,18 +99,23 @@ func drainChannel(ch chan []byte) {
 	}
 }
 
-
 func switchCameraMode() {
 	cameraMode = (cameraMode % 3) + 1
 	camera.SetMode(cameraMode)
 	log.Printf("Switched to camera mode: %d", cameraMode)
 }
 
-
 func main() {
 	flag.Var(&launchShellList, "launchShell", "Run shell command at start.  May be repeated to launch multiple commands.")
 	flag.Var(&launchList, "launch", "Command line to start an app.  May be repeated to launch multiple apps.")
 	flag.Parse()
+	if err := validateDemoMode(recordDemo); err != nil {
+		panic(err)
+	}
+	if recordDemo != "" {
+		winWidth = demoWidth
+		winHeight = demoHeight
+	}
 	for _, commandStr := range launchShellList {
 		ctx, cancel := context.WithCancel(context.Background())
 		command := exec.CommandContext(ctx, "/bin/sh", "-c", commandStr)
@@ -114,7 +124,6 @@ func main() {
 		go drainChannel(out)
 		go drainChannel(err)
 	}
-
 
 	camera = Cameras.New(cameraMode)
 	camera.SetPosition(12, 14, 2)
@@ -149,10 +158,15 @@ func main() {
 	if err := glfw.Init(); err != nil {
 		panic(err)
 	}
+	defer glfw.Terminate()
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	if recordDemo != "" {
+		glfw.WindowHint(glfw.CocoaRetinaFramebuffer, glfw.False)
+		glfw.WindowHint(glfw.Resizable, glfw.False)
+	}
 	win, err := glfw.CreateWindow(winWidth, winHeight, "Demo", nil, nil)
 	if err != nil {
 		panic(err)
@@ -190,21 +204,20 @@ func main() {
 		panic(err)
 	}
 
-	glInit(state, winWidth, winHeight, embeddedFS	)
+	glInit(state, winWidth, winHeight, embeddedFS)
 
-	//Position some trees
-	trees = make([]tree_struct, 0)
-	for i := 0; i < 10; i++ {
-		//make random location between -10 and 10
-		x := rand.Float32()*20 - 10
-		y := rand.Float32()*20 - 10
-		z := rand.Float32()*20 - 10
-		trees = append(trees, tree_struct{X: x, Y: y, Z: z})
+	trees = makeDemoTrees()
+
+	if recordDemo != "" {
+		if err := recordDemoGIF(win, state, recordDemo); err != nil {
+			panic(err)
+		}
+		return
 	}
 
 	go func() {
 		for {
-			scale := float32(0.5)  //Multiplier for the camera movement
+			scale := float32(0.5) //Multiplier for the camera movement
 			//Move the camera
 			MoveStep(win, scale)
 			time.Sleep(25 * time.Millisecond)
@@ -212,15 +225,15 @@ func main() {
 	}()
 	joystick.Setup_joystick()
 	/*
-	messages.Register("JoystickY", "JoystickY", func(name , id string, args interface{}) {
-		amount := args.(float64)
-		camera.Move(0, float32(amount))
-	})
-	messages.Register("JoystickX", "JoystickX", func(name , id string, args interface{}) {
-		amount := args.(float64)
-		camera.Move(2, float32(amount))
-	})
-		*/
+		messages.Register("JoystickY", "JoystickY", func(name , id string, args interface{}) {
+			amount := args.(float64)
+			camera.Move(0, float32(amount))
+		})
+		messages.Register("JoystickX", "JoystickX", func(name , id string, args interface{}) {
+			amount := args.(float64)
+			camera.Move(2, float32(amount))
+		})
+	*/
 	for !win.ShouldClose() {
 		joystick.DoJoystick()
 		mode := glfw.GetPrimaryMonitor().GetVideoMode()
@@ -240,7 +253,6 @@ func main() {
 			}
 		}
 
-	
 		gfxMain(win, state)
 		glfw.PollEvents()
 		time.Sleep(1 * time.Millisecond)
@@ -336,8 +348,8 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 	gl.Disable(gl.BLEND)
 
 	//Draw the ground layer
-	for i := -10; i < 11; i++ {
-		for j := -10; j < 11; j++ {
+	for i := -groundTileRadius; i <= groundTileRadius; i++ {
+		for j := -groundTileRadius; j <= groundTileRadius; j++ {
 
 			model := mgl32.Ident4()
 			model = model.Mul4(mgl32.Translate3D(float32(i)*2, float32(j)*2, 0))
@@ -374,9 +386,13 @@ func RenderFrame(state *State, viewMatrix mgl32.Mat4, projectionMatrix mgl32.Mat
 	for _, tree := range trees {
 		model := mgl32.Ident4()
 
-		model = model.Mul4(mgl32.Translate3D(tree.X, tree.Y, 2.0))
+		model = model.Mul4(mgl32.Translate3D(tree.X, tree.Y, 1.8))
 
+		directionToCamera := camera.Position.Sub(mgl32.Vec3{tree.X, tree.Y, 0})
+		billboardAngle := float32(math.Atan2(float64(directionToCamera.Y()), float64(directionToCamera.X()))) + PI/2
+		model = model.Mul4(mgl32.HomogRotate3DZ(billboardAngle))
 		model = model.Mul4(mgl32.HomogRotate3DY(PI))
+		model = model.Mul4(mgl32.Scale3D(1.8, 1.8, 1.8))
 
 		gl.UniformMatrix4fv(state.ModelUniform, 1, false, &model[0])
 		gl.DrawArrays(gl.TRIANGLES, 0, 2*3)
@@ -388,7 +404,7 @@ func checkGlError() {
 	err := gl.GetError()
 	if err > 0 {
 		errStr := fmt.Sprintf("GLerror: %v\n", err)
-		fmt.Printf(errStr)
+		fmt.Print(errStr)
 		panic(errStr)
 	}
 

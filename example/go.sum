@@ -2,12 +2,12 @@ github.com/donomii/glim v0.0.0-20220916232353-993eca43a643 h1:e9MXtS3pDhwQpf8GZr
 github.com/donomii/glim v0.0.0-20220916232353-993eca43a643/go.mod h1:QE1m+/9YQMdf+gHFOomRGkKpzOXfoSdD5cxKvOpyLeY=
 github.com/donomii/goof v0.0.0-20241124064022-84f417f466df h1:E7wMk63HGHhk5wzNRDkwnckq1aFXDRXeZNfuJQf/NVE=
 github.com/donomii/goof v0.0.0-20241124064022-84f417f466df/go.mod h1:ZgIjtvUfBzQ+0aQmB+UWVb2fhB0HmbFwu76laXvZLAY=
-github.com/donomii/sceneCamera v0.0.0-20240901215601-f889bb9815ef h1:/0LphedJZQrzM083FpqT9hyTB4/W2O/oVqA3CecleS4=
-github.com/donomii/sceneCamera v0.0.0-20240901215601-f889bb9815ef/go.mod h1:WJZjf6tsiOf5/YCBdut5KO7uJ3d9wuIBmA2djNq3utk=
+github.com/donomii/sceneCamera v1.0.0 h1:Wzjo5PYNodMoXoiabNFG/dsZcsH5Gk59NV1aVBYxqO0=
+github.com/donomii/sceneCamera v1.0.0/go.mod h1:zgC5lWMtWqpst+guULmVYaYUTcXamyPi/pGHQkRE2P4=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728 h1:RkGhqHxEVAvPM0/R+8g7XRwQnHatO0KAuVcwHo8q9W8=
-github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20260707082822-2a407d02d01a h1:hSqNjNllNZUIiqXiS7zFJFqqPa4VPqrzMcWws1dz/VE=
+github.com/go-gl/glfw/v3.3/glfw v0.0.0-20260707082822-2a407d02d01a/go.mod h1:SyRD8YfuKk+ZXlDqYiqe1qMSqjNgtHzBTG810KUagMc=
 github.com/go-gl/mathgl v1.2.0 h1:v2eOj/y1B2afDxF6URV1qCYmo1KW08lAMtTbOn3KXCY=
 github.com/go-gl/mathgl v1.2.0/go.mod h1:pf9+b5J3LFP7iZ4XXaVzZrCle0Q/vNpB/vDe5+3ulRE=
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF08vX0COfcOBJRhZ8lUbR+ZWIs0Y5g=

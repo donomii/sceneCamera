@@ -7,7 +7,19 @@
 
 SceneCamera provides camera movement and view/projection matrices for Go 3D applications. It supports museum, first-person, and real-time strategy movement, plus side-by-side stereo rendering.
 
-![Demo](camerademo.gif)
+## Demos
+
+### FPS mode
+
+![FPS camera moving over a flat plane with trees](camerademo.gif)
+
+### RTS mode
+
+![RTS camera circling over the map and trees](camerademo_rts.gif)
+
+### Flight mode
+
+![Flight camera diving toward the trees, leveling out, banking, and turning](camerademo_flight.gif)
 
 It is designed for OpenGL but only depends on [mathgl](https://github.com/go-gl/mathgl). The returned matrices can be copied into another graphics library's matrix format.
 
@@ -105,3 +117,14 @@ The `example` directory contains an OpenGL application:
 cd example
 go run .
 ```
+
+### Regenerating the demo GIFs
+
+Run either no-argument launcher from the `example` directory:
+
+```text
+./record-rts-demo.sh
+./record-flight-demo.sh
+```
+
+Each launcher renders a deterministic 480×270 animation with 72 frames over 5.04 seconds and replaces its corresponding GIF in the repository root.
